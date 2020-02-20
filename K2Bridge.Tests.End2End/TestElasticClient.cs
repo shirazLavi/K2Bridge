@@ -255,7 +255,6 @@ namespace K2Bridge.Tests.End2End
             foreach (JToken v in totalValues)
             {
                 var totalValue = v.Value<long>();
-                TestContext.Progress.WriteLine(v.Parent.Parent);
                 var jsonTotalObject = v.Parent.Parent.Parent;
                 JObject jsonHitsObject = (JObject)jsonTotalObject.Parent;
                 jsonTotalObject.Remove();
