@@ -18,12 +18,22 @@ namespace K2Bridge.Visitors
             EnsureClause.StringIsNotNullOrEmpty(rangeClause.FieldName, nameof(rangeClause.FieldName));
             EnsureClause.IsNotNull(rangeClause.GTEValue, nameof(rangeClause.GTEValue));
 
+            // format used by Elasticsearch 6
             if (rangeClause.Format == "epoch_millis")
             {
                 // default time filter through a rangeClause query uses epoch times with GTE+LTE
                 EnsureClause.IsNotNull(rangeClause.LTEValue, nameof(rangeClause.LTEValue));
 
                 rangeClause.KustoQL = $"{rangeClause.FieldName} >= fromUnixTimeMilli({rangeClause.GTEValue}) {KustoQLOperators.And} {rangeClause.FieldName} <= fromUnixTimeMilli({rangeClause.LTEValue})";
+            }
+
+            // format used by Elasticsearch 7
+            else if (rangeClause.Format == "strict_date_optional_time")
+            {
+                // default time filter through a rangeClause query uses epoch times with GTE+LTE
+                EnsureClause.IsNotNull(rangeClause.LTEValue, nameof(rangeClause.LTEValue));
+
+                rangeClause.KustoQL = $"{rangeClause.FieldName} >= {rangeClause.GTEValue} {KustoQLOperators.And} {rangeClause.FieldName} <= {rangeClause.LTEValue}";
             }
             else
             {

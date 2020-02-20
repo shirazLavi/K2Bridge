@@ -26,7 +26,9 @@ namespace K2Bridge.JsonConverters
             var obj = new DateHistogramAggregation
             {
                 FieldName = (string)jo["field"],
-                Interval = (string)jo["interval"],
+
+                // Field name is "interval" with Kibana 6 and "fixed_interval" with Kibana 7
+                FixedInterval = (string)jo["fixed_interval"] ?? (string)jo["interval"],
             };
 
             return obj;

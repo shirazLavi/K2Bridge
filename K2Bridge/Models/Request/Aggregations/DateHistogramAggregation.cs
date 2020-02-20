@@ -11,11 +11,9 @@ namespace K2Bridge.Models.Request.Aggregations
     [JsonConverter(typeof(DateHistogramAggregationConverter))]
     internal class DateHistogramAggregation : BucketAggregation
     {
-        [JsonProperty("field")]
         public string FieldName { get; set; }
 
-        [JsonProperty("interval")]
-        public string Interval { get; set; }
+        public string FixedInterval { get; set; }
 
         /// <inheritdoc/>
         public override void Accept(IVisitor visitor)

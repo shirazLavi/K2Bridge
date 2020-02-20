@@ -30,13 +30,13 @@ namespace UnitTests.K2Bridge.Visitors
         [TestCase("y", ExpectedResult = "wibble by wobble = startofyear(wobble)\n| order by wobble asc", TestName = "DateHistogramVisit_WithStartOfYearInterval_ReturnsValidResponse")]
         [TestCase("M", ExpectedResult = "wibble by wobble = startofmonth(wobble)\n| order by wobble asc", TestName = "DateHistogramVisit_WithStartOfMonthInterval_ReturnsValidResponse")]
         [TestCase("z", ExpectedResult = "wibble by wobble = bin(wobble, z)\n| order by wobble asc")]
-        public string DateHistogramVisit_WithAggregation_ReturnsValidResponse(string interval)
+        public string DateHistogramVisit_WithAggregation_ReturnsValidResponse(string fixedInterval)
         {
             var histogramAggregation = new DateHistogramAggregation()
             {
                 Metric = "wibble",
                 FieldName = "wobble",
-                Interval = interval,
+                FixedInterval = fixedInterval,
             };
 
             var visitor = new ElasticSearchDSLVisitor(SchemaRetrieverMock.CreateMockSchemaRetriever());
