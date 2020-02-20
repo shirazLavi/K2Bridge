@@ -73,3 +73,12 @@ Note that the name of the index must be an **exact match** to the table name or 
 
 Notes:
 To run on other kubernetes providers, change in `values.yaml` the elasticsearch storageClassName to fit the one suggested by the provider.
+
+1. Kibana 7 specific
+
+If using Kibana 7, you must enable `courier:batchSearches` option under Advanced settings.
+
+_Explanation: courier:batchSearches ensures the /\_msearch endpoint is used for all searches. Kibana 7 uses /\_search by default for the Discover tab, if no Time Filter is selected, which is not supported by K2Bridge currently._
+
+![courier:batchSearches option](images/kibana7_courier_batchSearches.png)
+
