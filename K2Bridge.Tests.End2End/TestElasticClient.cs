@@ -135,6 +135,21 @@ namespace K2Bridge.Tests.End2End
             // backend query isn't something we want to compare since it's unique to K2
             DeleteValue(result, "responses[*]._backendQuery");
 
+            // remove extra attribute `took` introduced in Elasticsearch 7
+            DeleteValue(result, "took");
+
+            // Standardize returned aggregation timezone
+            // (UTC in Elasticsearch 6, and query date_histogram.timezone in Elasticsearch 7)
+            var aggregationKeys = result.SelectTokens($"responses[*].aggregations.*.buckets[*].key_as_string");
+            foreach (JValue v in aggregationKeys)
+            {
+                if (v.Type == JTokenType.Date)
+                {
+                    var value = v.Value<DateTime>();
+                    v.Value = value.ToUniversalTime();
+                }
+            }
+
             return result;
         }
 
@@ -213,6 +228,9 @@ namespace K2Bridge.Tests.End2End
 
             ReplaceType(result, "text", "keyword", true);
 
+            // remove extra attribute `indices` introduced in Elasticsearch 7
+            DeleteValue(result, "indices");
+
             return result;
         }
 
@@ -229,6 +247,21 @@ namespace K2Bridge.Tests.End2End
             MaskValue(result, $"{searchBase}_shards.skipped");
             MaskValue(result, $"{searchBase}_shards.failed");
             MaskValue(result, $"{searchBase}hits.hits[*]._id");
+
+            // normalize total to Elasticsearch 6 format 
+            // In Elasticsearch 6: "total": 2
+            // In Elasticsearch 7: "total": { "relation": "eq", "value": 2 }
+            var totalValues = result.SelectTokens($"{searchBase}hits.total.value");
+            foreach (JToken v in totalValues)
+            {
+                var totalValue = v.Value<long>();
+                TestContext.Progress.WriteLine(v.Parent.Parent);
+                var jsonTotalObject = v.Parent.Parent.Parent;
+                JObject jsonHitsObject = (JObject)jsonTotalObject.Parent;
+                jsonTotalObject.Remove();
+
+                jsonHitsObject.Add("total", totalValue);
+            }
         }
 
         /// <summary>
