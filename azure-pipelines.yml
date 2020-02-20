@@ -203,7 +203,8 @@ stages:
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
 
-- stage: terraform
+- stage: Terraform
+  dependsOn: []
   jobs:
   - job: Terraform
     displayName: Prepare Terraform
@@ -238,7 +239,7 @@ stages:
   parameters:
     stage: integration6
 
-- stage: cleanup
+- stage: Cleanup
   dependsOn:
   - integration6
   jobs:
