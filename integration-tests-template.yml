@@ -1,10 +1,11 @@
 parameters:
-  stage: integration
+  name: integration
+  displayName: Integration Tests
   elasticsearchVersion: 6.8.5
 
 stages:
-- stage: ${{ parameters.stage }}
-  displayName: Integration Tests
+- stage: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }}
   dependsOn:
   - security_analysis
   - build

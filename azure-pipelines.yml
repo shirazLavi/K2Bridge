@@ -237,7 +237,15 @@ stages:
 
 - template: integration-tests-template.yml
   parameters:
-    stage: integration6
+    name: integration6
+    displayName: Integration Tests (ES6)
+    elasticsearchVersion: 6.8.5
+
+- template: integration-tests-template.yml
+  parameters:
+    name: integration6
+    displayName: Integration Tests (ES7)
+    elasticsearchVersion: 7.5.2
 
 - stage: Cleanup
   dependsOn:
