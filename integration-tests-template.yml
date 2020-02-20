@@ -83,7 +83,7 @@ stages:
     - bash: |
         set -eux
         kubectl run --attach --rm --restart=Never --image=curlimages/curl smoke-test-$RANDOM -- \
-          --max-time 5 --retry 99999 --retry-max-time 1200 http://k2bridge:8080
+          --max-time 5 --retry 99999 --retry-max-time 1200 http://$(CHART_NAME):8080
       displayName: Smoke test
 
   - job: Deploy_Elasticsearch
@@ -135,7 +135,7 @@ stages:
           AAD_TOKEN=$(az account get-access-token --resource "$KUSTO_URI" --query accessToken -o tsv)
           kubectl run --restart=Never \
             --image=$(ACR_NAME).azurecr.io/k2bridge-test:$SEMANTIC_VERSION \
-            --env=K2BRIDGE_URL=http://k2bridge:8080 \
+            --env=K2BRIDGE_URL=http://$(CHART_NAME):8080 \
             --env=ELASTICSEARCH_URL=http://elasticsearchqa-master:9200 \
             --env=KUSTO_URI=$KUSTO_URI \
             --env=KUSTO_DB=$(KUSTO_DB_NAME) \
