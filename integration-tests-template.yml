@@ -1,5 +1,6 @@
 parameters:
   stage: integration
+  elasticsearchVersion: 6.8.5
 
 stages:
 - stage: ${{ parameters.stage }}
@@ -58,6 +59,7 @@ stages:
           --wait --timeout 30m \
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
           --set image.tag=$SEMANTIC_VERSION \
+          --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
           --set replicaCount=2 \
           --set settings.adxClusterUrl="$KUSTO_URI" \
           --set settings.adxDefaultDatabaseName="$(KUSTO_DB)" \
@@ -92,7 +94,7 @@ stages:
         helm upgrade --install elasticsearchqa elastic/elasticsearch \
           --wait --timeout 45m \
           --set image=docker.elastic.co/elasticsearch/elasticsearch-oss \
-          --set imageTag=6.8.5 \
+          --set imageTag=${{ parameters.elasticsearchVersion }} \
           --set clusterName=elasticsearchqa \
           --set replicas=1 \
           --set persistence.enabled=false \
