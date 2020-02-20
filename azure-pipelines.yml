@@ -167,7 +167,15 @@ stages:
         docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
           -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
           .
-      displayName: Build Runtime Image
+
+          # Build end-to-end test image
+          docker build --target end2endtest \
+            --build-arg VersionPrefix="$SEMANTIC_VERSION" \
+            -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
+          .
+
+      displayName: Build Docker Images
+
 
     - task: AzureCLI@1
       displayName: Push Image
@@ -179,6 +187,7 @@ stages:
 
           # Push Docker image
           docker push "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION"
+          docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
 
     - task: AzureCLI@1
       displayName: Push Helm Charts to ACR
@@ -194,13 +203,7 @@ stages:
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
 
-- stage: integration
-  displayName: Integration Tests
-  dependsOn:
-  - security_analysis
-  - build
-  jobs:
-
+- stage: terraform
   - job: Terraform
     displayName: Prepare Terraform
     steps:
@@ -230,189 +233,16 @@ stages:
         TerraformEnvVariables:
           TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
 
-  # Deploy a new Kusto db
-  # Either if the db name is not set to 'demo' which means it is the Dev CI process
-  # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
-  - job: Deploy_Kusto
-    displayName: Provision a new Kusto database
-    condition: or(and(succeeded(), not(eq(variables['KUSTO_DB'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
-    dependsOn: Terraform
-    steps:
+- template: integration-tests-template.yml
+  parameters:
+    stage: integration6
 
-        - task: AzureCLI@1
-          displayName: Provision Kusto database
-          inputs:
-            azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
-            scriptLocation: inlineScript
-            inlineScript: |
-              set -eux  # fail on error
-              az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
-
-  - job: Deploy_K2Bridge
-    displayName: Deploy K2Bridge
-    dependsOn: Terraform
-    variables:
-      ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
-        NOT_MASTER_ES_CONFIG: "--set elasticsearch.replicas=2 --set elasticsearch.minimumMasterNodes=2"
-    steps:
-
-    - template: infrastructure/setup-k8s-clients-template.yml
-
-    - task: AzureCLI@1
-      displayName: Log into ACR Helm repo
-      inputs:
-        azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eu  # fail on error
-          az acr helm repo add -n "$(ACR_NAME)"
-          KUSTO_URI=$(az kusto cluster show -g $(RESOURCE_GROUP) -n $(KUSTO_NAME) --query uri -o tsv)
-          echo "##vso[task.setvariable variable=KUSTO_URI]$KUSTO_URI"
-
-    - bash: |
-        set -eux  # fail on error
-        helm show chart $(ACR_NAME)/k2bridge
-        # List charts before deploying (for job log, useful if rerunning job)
-        helm list
-        # Deploy chart
-        helm upgrade --install k2bridge $(ACR_NAME)/k2bridge \
-          --version "$SEMANTIC_VERSION" \
-          --wait --timeout 30m \
-          --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
-          --set image.tag=$SEMANTIC_VERSION \
-          --set replicaCount=2 \
-          --set settings.adxClusterUrl="$KUSTO_URI" \
-          --set settings.adxDefaultDatabaseName="$(KUSTO_DB)" \
-          --set settings.aadClientId="$(AKS_SP_CLIENT_ID)" \
-          --set settings.aadClientSecret="$secret" \
-          --set settings.aadTenantId="$TENANT_ID" \
-          --set settings.collectTelemetry="$COLLECT_TELEMETRY" \
-          --set settings.instrumentationKey="$TELEMETRY_KEY" \
-          ${NOT_MASTER_ES_CONFIG:-} #defaults to an empty string
-        # List charts after deploying (for job log)
-        helm list
-      displayName: Install Helm chart
-      env:
-        secret: $(AKS_SP_CLIENT_SECRET)
-
-    - bash: |
-        set -eux
-        kubectl run --attach --rm --restart=Never --image=curlimages/curl smoke-test-$RANDOM -- \
-          --max-time 5 --retry 99999 --retry-max-time 1200 http://k2bridge:8080
-      displayName: Smoke test
-
-  - job: Deploy_Elasticsearch
-    displayName: Deploy Elasticsearch
-    dependsOn: Terraform
-    variables:
-      KUBERNETES_NAMESPACE: $[dependencies.Terraform.outputs['GenerateNS.KUBERNETES_NAMESPACE']]
-    steps:
-
-    - template: infrastructure/setup-k8s-clients-template.yml
-
-    - bash: |
-        set -eux  # fail on error
-        helm list
-        helm repo add elastic https://helm.elastic.co
-        helm upgrade --install elasticsearchqa elastic/elasticsearch \
-          --wait --timeout 45m \
-          --set image=docker.elastic.co/elasticsearch/elasticsearch-oss \
-          --set imageTag=6.8.5 \
-          --set clusterName=elasticsearchqa \
-          --set replicas=1 \
-          --set persistence.enabled=false \
-          --set minimumMasterNodes=1 \
-          --set antiAffinity="soft" \
-          --set esJavaOpts="-Xmx512m -Xms512m" \
-          --set resources.requests.cpu="100m" \
-          --set resources.requests.memory="1024M" \
-          --set limits.cpu="1000m" \
-          --set limits.memory="2048M"
-
-      displayName: Deploy Elasticsearch
-
-  - job: e2e_image
-    displayName: Prepare E2E Image
-    steps:
-
-    - task: AzureCLI@1
-      displayName: Login to ACR
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eux  # fail on error
-
-          az configure --defaults acr="$ACR_NAME"
-          az acr login
-
-    - bash: |
-          # Build end-to-end test image
-          docker build --target end2endtest \
-            --build-arg VersionPrefix="$SEMANTIC_VERSION" \
-            -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
-            .
-      displayName: Build E2E-Test Image
-
-    - task: AzureCLI@1
-      displayName: Push Image
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
-
-  - job: Test
-    displayName: Run Tests
-    dependsOn:
-    - Terraform
-    - Deploy_Kusto
-    - Deploy_K2Bridge
-    - Deploy_Elasticsearch
-    - e2e_image
-    variables:
-      KUBERNETES_NAMESPACE: $[dependencies.Terraform.outputs['GenerateNS.KUBERNETES_NAMESPACE']]
-    steps:
-
-    - template: infrastructure/setup-k8s-clients-template.yml
-
-    - task: AzureCLI@1
-      displayName: End-to-end test
-      inputs:
-        azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eu  # fail on error
-          podName="e2e-test-$RANDOM"
-          KUSTO_URI=$(az kusto cluster show -g $(RESOURCE_GROUP) -n $(KUSTO_NAME) --query uri -o tsv)
-          AAD_TOKEN=$(az account get-access-token --resource "$KUSTO_URI" --query accessToken -o tsv)
-          kubectl run --restart=Never \
-            --image=$(ACR_NAME).azurecr.io/k2bridge-test:$SEMANTIC_VERSION \
-            --env=K2BRIDGE_URL=http://k2bridge:8080 \
-            --env=ELASTICSEARCH_URL=http://elasticsearchqa-master:9200 \
-            --env=KUSTO_URI=$KUSTO_URI \
-            --env=KUSTO_DB=$(KUSTO_DB) \
-            --env=AAD_TOKEN=$AAD_TOKEN \
-            "$podName"
-          set -x  # enable verbose mode, without exposing $AAD_TOKEN
-          kubectl wait --timeout 45m --for=condition=ContainersReady pod "$podName"
-          # Read test output from FIFO within container
-          kubectl exec "$podName" cat /test-result-pipe > TestResult.xml
-          kubectl delete pod "$podName"
-
-    - task: PublishTestResults@2
-      displayName: Publish test results
-      condition: succeededOrFailed()
-      inputs:
-        testRunner: VSTest
-        testResultsFiles: 'TestResult.xml'
-        failTaskOnFailedTests: true
-        testRunTitle: 'E2E Tests'
+- stage: cleanup
+  dependsOn:
+  - integration6
+  jobs:
 
   - job: Cleanup
-    dependsOn:
-    - Terraform
-    - Test
     # Do not delete AKS namespace:
     # - if pipeline was canceled or failed before a Kubernetes namespace was generated
     # - if deploying on master branch
@@ -436,7 +266,7 @@ stages:
 - stage: release
   displayName: Release Artifacts
   dependsOn:
-  - integration
+  - integration6
   jobs:
 
   - job: Promote
