@@ -248,7 +248,7 @@ namespace K2Bridge.Tests.End2End
             MaskValue(result, $"{searchBase}_shards.failed");
             MaskValue(result, $"{searchBase}hits.hits[*]._id");
 
-            // normalize total to Elasticsearch 6 format 
+            // normalize total to Elasticsearch 6 format
             // In Elasticsearch 6: "total": 2
             // In Elasticsearch 7: "total": { "relation": "eq", "value": 2 }
             var totalValues = result.SelectTokens($"{searchBase}hits.total.value");
