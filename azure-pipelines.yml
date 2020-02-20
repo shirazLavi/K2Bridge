@@ -238,12 +238,14 @@ stages:
 - template: integration-tests-template.yml
   parameters:
     name: integration6
+    suffix: 6
     displayName: Integr. Tests (ES6)
     elasticsearchVersion: 6.8.5
 
 - template: integration-tests-template.yml
   parameters:
     name: integration7
+    suffix: 7
     displayName: Integr. Tests (ES7)
     elasticsearchVersion: 7.5.2
 

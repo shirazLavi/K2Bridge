@@ -1,6 +1,7 @@
 parameters:
   name: integration
   displayName: Integration Tests
+  suffix: 6
   elasticsearchVersion: 6.8.5
 
 stages:
@@ -10,6 +11,9 @@ stages:
   - security_analysis
   - build
   - terraform
+  variables:
+    KUSTO_DB_NAME: $(KUSTO_DB)${{ parameters.suffix }}
+    CHART_NAME: k2bridge${{ parameters.suffix }}
   jobs:
 
   # Deploy a new Kusto db
@@ -17,7 +21,7 @@ stages:
   # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
   - job: Deploy_Kusto
     displayName: Provision a new Kusto database
-    condition: or(and(succeeded(), not(eq(variables['KUSTO_DB'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
+    condition: or(and(succeeded(), not(eq(variables['KUSTO_DB_NAME'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB_NAME'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
     steps:
 
         - task: AzureCLI@1
@@ -27,7 +31,7 @@ stages:
             scriptLocation: inlineScript
             inlineScript: |
               set -eux  # fail on error
-              az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
+              az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB_NAME)"
 
   - job: Deploy_K2Bridge
     displayName: Deploy K2Bridge
@@ -55,7 +59,7 @@ stages:
         # List charts before deploying (for job log, useful if rerunning job)
         helm list
         # Deploy chart
-        helm upgrade --install k2bridge $(ACR_NAME)/k2bridge \
+        helm upgrade --install "$(CHART_NAME)" $(ACR_NAME)/k2bridge \
           --version "$SEMANTIC_VERSION" \
           --wait --timeout 30m \
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
@@ -63,7 +67,7 @@ stages:
           --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
           --set replicaCount=2 \
           --set settings.adxClusterUrl="$KUSTO_URI" \
-          --set settings.adxDefaultDatabaseName="$(KUSTO_DB)" \
+          --set settings.adxDefaultDatabaseName="$(KUSTO_DB_NAME)" \
           --set settings.aadClientId="$(AKS_SP_CLIENT_ID)" \
           --set settings.aadClientSecret="$secret" \
           --set settings.aadTenantId="$TENANT_ID" \
@@ -134,7 +138,7 @@ stages:
             --env=K2BRIDGE_URL=http://k2bridge:8080 \
             --env=ELASTICSEARCH_URL=http://elasticsearchqa-master:9200 \
             --env=KUSTO_URI=$KUSTO_URI \
-            --env=KUSTO_DB=$(KUSTO_DB) \
+            --env=KUSTO_DB=$(KUSTO_DB_NAME) \
             --env=AAD_TOKEN=$AAD_TOKEN \
             "$podName"
           set -x  # enable verbose mode, without exposing $AAD_TOKEN
