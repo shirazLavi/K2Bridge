@@ -204,6 +204,7 @@ stages:
           az acr helm push --force "$(ls $empty_dir/*)"
 
 - stage: terraform
+  jobs:
   - job: Terraform
     displayName: Prepare Terraform
     steps:
