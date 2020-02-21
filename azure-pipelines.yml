@@ -155,11 +155,11 @@ stages:
           az configure --defaults acr="$ACR_NAME"
           az acr login
 
-        # Build runtime Docker image
-        # Reuses the cached build stage from the previous docker build task
-        docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
-          -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
-          .
+          # Build runtime Docker image
+          # Reuses the cached build stage from the previous docker build task
+          docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
+            -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
+            .
 
           # Build end-to-end test image
           docker build --target end2endtest \
