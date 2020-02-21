@@ -49,7 +49,21 @@ namespace K2Bridge.Tests.End2End
         [Description("/_msearch Kibana aggregation query returning two results")]
         public void CompareElasticKusto_WhenMSearch_ES7()
         {
-            ParallelQuery($"{FLIGHTSDIR}/MSearch_ES7.json");
+            // Use ES6 compatible query
+            string esQueryFile;
+            var es = ESClient().ClusterInfo();
+            var esVersion = es.Result.SelectToken("version.number");
+            if (esVersion.Value<string>().StartsWith("6"))
+            {
+                esQueryFile = $"{FLIGHTSDIR}/MSearch_ES7-ES6-compat.json";
+            }
+            else
+            {
+                esQueryFile = $"{FLIGHTSDIR}/MSearch_ES7.json";
+            }
+
+            var k2QueryFile = $"{FLIGHTSDIR}/MSearch_ES7.json";
+            ParallelQuery(esQueryFile, k2QueryFile);
         }
 
         [Test]
