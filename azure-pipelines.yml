@@ -233,8 +233,7 @@ stages:
 - stage: integration_tests
   displayName: Integration Tests
   jobs:
-  - job: Test
-    displayName: Integration Test
+  - job: Tests
     strategy:
       matrix: 
         Integration6:
