@@ -305,7 +305,7 @@ stages:
         # Send a query hitting the internal Elasticsearch backend, and a query hitting Kusto
         kubectl run --attach --rm --restart=Never --image=busybox smoke-test-$(CHART_NAME) -- \
           wget -O- \
-          'http://$(CHART_NAME):8080'
+          'http://$(CHART_NAME):8080' \
           'http://$(CHART_NAME):8080/*/_search'
 
       displayName: Smoke test
