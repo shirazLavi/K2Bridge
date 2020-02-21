@@ -5,6 +5,7 @@
 namespace K2Bridge.Tests.End2End
 {
     using System;
+    using System.Linq;
     using FluentAssertions.Json;
     using Newtonsoft.Json.Linq;
     using NUnit.Framework;
@@ -47,14 +48,14 @@ namespace K2Bridge.Tests.End2End
         }
 
         [Test]
-        [Description("/_msearch Kibana aggregation query returning two results")]
-        public void CompareElasticKusto_WhenMSearch_ES7()
+        [Description("/_msearch with query in Kibana 7 format and no sorting clause")]
+        public void CompareElasticKusto_WhenMSearch_Unsorted_ES7()
         {
             // Use Elasticsearch 6 compatible query if backend is Elasticsearch 6
             // (`interval` attribute renamed to `fixed_interval` in Elasticsearch 7)
             string esQueryFile;
-            var es = ESClient().ClusterInfo();
-            var esVersion = es.Result.SelectToken("version.number");
+            var info = ESClient().ClusterInfo();
+            var esVersion = info.Result.SelectToken("version.number");
             if (esVersion.Value<string>().StartsWith("6", StringComparison.OrdinalIgnoreCase))
             {
                 esQueryFile = $"{FLIGHTSDIR}/MSearch_ES7-ES6-compat.json";
@@ -65,7 +66,14 @@ namespace K2Bridge.Tests.End2End
             }
 
             var k2QueryFile = $"{FLIGHTSDIR}/MSearch_ES7.json";
-            ParallelQuery(esQueryFile, k2QueryFile);
+
+            var es = ESClient().MSearch(INDEX, esQueryFile, true);
+            var k2 = K2Client().MSearch(INDEX, k2QueryFile, true);
+
+            var esSorted = ReplaceHitsWithCount(es.Result);
+            var k2Sorted = ReplaceHitsWithCount(k2.Result);
+
+            AssertJsonIdentical(k2Sorted, esSorted);
         }
 
         [Test]
@@ -218,6 +226,17 @@ namespace K2Bridge.Tests.End2End
             var t = es.Result.SelectToken("responses[0].hits.total");
             Assert.IsTrue(t.Value<int>() >= minResults);
             AssertJsonIdentical(k2.Result, es.Result);
+        }
+
+        // Replace hits[] array in-place in json with the count of the number of elements
+        private JToken ReplaceHitsWithCount(JToken result)
+        {
+            var hitsCollections = result.SelectTokens("responses[*].hits.hits");
+            foreach (JArray arr in hitsCollections)
+            {
+                arr.Replace(new JValue(arr.Count()));
+            }
+            return result;
         }
     }
 }
