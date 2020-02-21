@@ -17,8 +17,8 @@ stages:
   displayName: Build
   jobs:
 
-  - job: run_analysis
-    displayName: Run Analysis
+  - job: security_analysis
+    displayName: Security Analysis
 
     pool:
       # CredScan only runs on Windows
@@ -134,7 +134,9 @@ stages:
 
   - job: push_artifacts
     displayName: Push Artifacts to ACR
-    dependsOn: build_and_unittest
+    dependsOn:
+    - security_analysis
+    - build_and_unittest
     steps:
 
     - task: HelmInstaller@1
