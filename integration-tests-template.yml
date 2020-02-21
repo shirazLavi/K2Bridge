@@ -14,6 +14,7 @@ stages:
   variables:
     KUSTO_DB_NAME: $(KUSTO_DB)${{ parameters.suffix }}
     CHART_NAME: k2bridge${{ parameters.suffix }}
+    ES_QA_NAME: elasticsearchqa${{ parameters.suffix }}
   jobs:
 
   # Deploy a new Kusto db
@@ -64,8 +65,11 @@ stages:
           --wait --timeout 30m \
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
           --set image.tag=$SEMANTIC_VERSION \
-          --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
           --set replicaCount=2 \
+          --set metadataElasticAddress="http://$(CHART_NAME)-es-master:9200" \
+          --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
+          --set elasticsearch.clusterName="$(CHART_NAME)-es" \
+          --set elasticsearch.masterService="$(CHART_NAME)-es-master" \
           --set settings.adxClusterUrl="$KUSTO_URI" \
           --set settings.adxDefaultDatabaseName="$(KUSTO_DB_NAME)" \
           --set settings.aadClientId="$(AKS_SP_CLIENT_ID)" \
@@ -96,11 +100,11 @@ stages:
         set -eux  # fail on error
         helm list
         helm repo add elastic https://helm.elastic.co
-        helm upgrade --install elasticsearchqa elastic/elasticsearch \
+        helm upgrade --install "$(ES_QA_NAME)" elastic/elasticsearch \
           --wait --timeout 45m \
           --set image=docker.elastic.co/elasticsearch/elasticsearch-oss \
           --set imageTag=${{ parameters.elasticsearchVersion }} \
-          --set clusterName=elasticsearchqa \
+          --set clusterName="$(ES_QA_NAME)" \
           --set replicas=1 \
           --set persistence.enabled=false \
           --set minimumMasterNodes=1 \
@@ -136,7 +140,7 @@ stages:
           kubectl run --restart=Never \
             --image=$(ACR_NAME).azurecr.io/k2bridge-test:$SEMANTIC_VERSION \
             --env=K2BRIDGE_URL=http://$(CHART_NAME):8080 \
-            --env=ELASTICSEARCH_URL=http://elasticsearchqa-master:9200 \
+            --env=ELASTICSEARCH_URL=http://"$(ES_QA_NAME)"-master:9200 \
             --env=KUSTO_URI=$KUSTO_URI \
             --env=KUSTO_DB=$(KUSTO_DB_NAME) \
             --env=AAD_TOKEN=$AAD_TOKEN \
