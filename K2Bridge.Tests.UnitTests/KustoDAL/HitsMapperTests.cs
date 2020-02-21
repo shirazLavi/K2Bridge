@@ -43,7 +43,8 @@ namespace UnitTests.K2Bridge.KustoDAL
                 ""label2"": ""boxes"",
                 ""label3"": ""boxes of boxes""
               },
-              ""fields"": {}
+              ""fields"": {},
+              ""sort"": []
             }]";
             using (var sr = new StringReader(expectedStr))
             using (var jr = new JsonTextReader(sr) { DateParseHandling = DateParseHandling.None })

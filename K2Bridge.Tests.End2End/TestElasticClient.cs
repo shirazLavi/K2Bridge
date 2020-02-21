@@ -168,6 +168,15 @@ namespace K2Bridge.Tests.End2End
                 v.Value = 0f;
             }
 
+            var emptySorts = result.SelectTokens($"responses[*].hits.hits[*].sort");
+            foreach (JArray v in emptySorts)
+            {
+                if (v.Count == 0)
+                {
+                    v.Parent.Remove();
+                }
+            }
+
             // TODO: K2Bridge returns null
             // https://dev.azure.com/csedevil/K2-bridge-internal/_workitems/edit/1467
             MaskValue(result, "responses[*].hits.max_score");

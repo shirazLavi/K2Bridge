@@ -38,9 +38,8 @@ namespace K2Bridge.Models.Response
         [JsonProperty("fields")]
         public Dictionary<string, List<object>> Fields { get; } = new Dictionary<string, List<object>>();
 
-        [JsonProperty("sort", NullValueHandling = NullValueHandling.Ignore)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Justification = "Nullable to avoid serializing empty list")]
-        public IList<object> Sort { get; set; }
+        [JsonProperty("sort")]
+        public IList<object> Sort { get; } = new List<object>();
 
         [JsonProperty("highlight", NullValueHandling = NullValueHandling.Ignore)]
         public Dictionary<string, object> Highlight { get; private set; }
