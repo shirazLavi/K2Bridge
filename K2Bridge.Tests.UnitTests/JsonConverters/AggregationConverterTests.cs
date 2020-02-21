@@ -61,7 +61,7 @@ namespace UnitTests.K2Bridge.JsonConverters
                     { "2", new Aggregation() {
                         PrimaryAggregation = new DateHistogramAggregation {
                             FieldName = "timestamp",
-                            Interval = "1m",
+                            FixedInterval = "1m",
                             Metric = "count()",
                             },
                         SubAggregations = new Dictionary<string, Aggregation>(),
