@@ -275,6 +275,7 @@ stages:
           --set resources.requests.memory="1024M" \
           --set limits.cpu="1000m" \
           --set limits.memory="2048M"
+        helm list
 
       displayName: Install Elasticsearch
 
@@ -292,13 +293,22 @@ stages:
           az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
 
     - bash: |
-        set -eux
+        set -eux  # fail on error
         kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
         kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
         kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
+      displayName: Await deployment
+
+    - bash: |
+        set -eux  # fail on error
+
+        # Send a query hitting the internal Elasticsearch backend, and a query hitting Kusto
         kubectl run --attach --rm --restart=Never --image=busybox smoke-test-$(CHART_NAME) -- \
-          wget -O- http://$(CHART_NAME):8080
-      displayName: Await & smoke test
+          wget -O- \
+          'http://$(CHART_NAME):8080'
+          'http://$(CHART_NAME):8080/*/_search'
+
+      displayName: Smoke test
 
     - task: AzureCLI@1
       displayName: End-to-end test
