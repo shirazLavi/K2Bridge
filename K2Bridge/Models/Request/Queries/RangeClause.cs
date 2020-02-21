@@ -14,16 +14,14 @@ namespace K2Bridge.Models.Request.Queries
     {
         public string FieldName { get; set; }
 
-#nullable enable
-        public object? GTEValue { get; set; }
+        public object GTEValue { get; set; }
 
         // isn't created by kibana but kept here for completeness
-        public object? GTValue { get; set; }
+        public object GTValue { get; set; }
 
-        public object? LTEValue { get; set; }
+        public object LTEValue { get; set; }
 
-        public object? LTValue { get; set; }
-#nullable disable
+        public object LTValue { get; set; }
 
         public string Format { get; set; }
 

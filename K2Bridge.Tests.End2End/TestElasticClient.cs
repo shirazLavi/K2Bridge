@@ -138,16 +138,47 @@ namespace K2Bridge.Tests.End2End
             // remove extra attribute `took` introduced in Elasticsearch 7
             DeleteValue(result, "took");
 
+            // Standardize timestamp format
+            // (Elasticsearch 7 truncates milliseconds if .000)
+            var timestampValues = result.SelectTokens($"responses[*].hits.hits[*].fields.timestamp[*]");
+            foreach (JValue v in timestampValues)
+            {
+                var value = v.Value<string>();
+                if (value.EndsWith(".000Z", StringComparison.InvariantCulture))
+                {
+                    v.Value = value.Substring(0, value.Length - 5) + "Z";
+                }
+            }
+
+            // (Elasticsearch truncates time if T00:00:00)
+            var timestampSourceValues = result.SelectTokens($"responses[*].hits.hits[*]._source.timestamp");
+            foreach (JValue v in timestampSourceValues)
+            {
+                var value = v.Value<string>();
+                if (value.EndsWith("T00:00:00", StringComparison.InvariantCulture))
+                {
+                    v.Value = value.Substring(0, value.Length - 9);
+                }
+            }
+
+            // Elasticsearch 7 returns score 0
+            var scoreValues = result.SelectTokens($"responses[*].hits.hits[?(@._score==null)]._score");
+            foreach (JValue v in scoreValues)
+            {
+                v.Value = 0f;
+            }
+
+            // TODO: K2Bridge returns null
+            // https://dev.azure.com/csedevil/K2-bridge-internal/_workitems/edit/1467
+            MaskValue(result, "responses[*].hits.max_score");
+
             // Standardize returned aggregation timezone
             // (UTC in Elasticsearch 6, and query date_histogram.timezone in Elasticsearch 7)
             var aggregationKeys = result.SelectTokens($"responses[*].aggregations.*.buckets[*].key_as_string");
             foreach (JValue v in aggregationKeys)
             {
-                if (v.Type == JTokenType.Date)
-                {
-                    var value = v.Value<DateTime>();
-                    v.Value = value.ToUniversalTime();
-                }
+                var value = DateTime.Parse(v.Value<string>(), null, System.Globalization.DateTimeStyles.AdjustToUniversal);
+                v.Value = value.ToUniversalTime().ToString("o", System.Globalization.CultureInfo.InvariantCulture);
             }
 
             return result;
@@ -372,11 +403,9 @@ namespace K2Bridge.Tests.End2End
                 throw new HttpRequestException($"{response.StatusCode} {response.ReasonPhrase} at {client.BaseAddress}: <{responseData}>");
             }
 
-            var settings = new JsonSerializerSettings { DateParseHandling = DateParseHandling.None }
-;
-            _ = JsonConvert.DeserializeObject<JToken>(responseData, settings); // data
-            var actual = JToken.Parse(responseData);
-            return actual;
+            using var reader = new JsonTextReader(new StringReader(responseData));
+            reader.DateParseHandling = DateParseHandling.None;
+            return JObject.Load(reader);
         }
     }
 }

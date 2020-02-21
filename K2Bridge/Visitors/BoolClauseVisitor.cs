@@ -18,6 +18,8 @@ namespace K2Bridge.Visitors
         {
             Ensure.IsNotNull(boolQuery, nameof(boolQuery));
 
+            // Kibana 6 Discover tab sends filters in `must` field, Kibana 7 in `filter` field
+            AddListInternal(boolQuery.Filter, KustoQLOperators.And, false /* positive */, boolQuery);
             AddListInternal(boolQuery.Must, KustoQLOperators.And, false /* positive */, boolQuery);
             AddListInternal(boolQuery.MustNot, KustoQLOperators.And, true /* negative */, boolQuery);
             AddListInternal(boolQuery.Should, KustoQLOperators.Or, false /* positive */, boolQuery);

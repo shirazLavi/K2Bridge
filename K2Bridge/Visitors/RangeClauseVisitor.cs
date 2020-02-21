@@ -4,7 +4,9 @@
 
 namespace K2Bridge.Visitors
 {
+    using System;
     using K2Bridge.Models.Request.Queries;
+    using Newtonsoft.Json.Linq;
 
     /// <content>
     /// A visitor for the <see cref="RangeClause"/> element.
@@ -18,7 +20,7 @@ namespace K2Bridge.Visitors
             EnsureClause.StringIsNotNullOrEmpty(rangeClause.FieldName, nameof(rangeClause.FieldName));
             EnsureClause.IsNotNull(rangeClause.GTEValue, nameof(rangeClause.GTEValue));
 
-            // format used by Elasticsearch 6
+            // format used by Kibana 6
             if (rangeClause.Format == "epoch_millis")
             {
                 // default time filter through a rangeClause query uses epoch times with GTE+LTE
@@ -27,13 +29,15 @@ namespace K2Bridge.Visitors
                 rangeClause.KustoQL = $"{rangeClause.FieldName} >= fromUnixTimeMilli({rangeClause.GTEValue}) {KustoQLOperators.And} {rangeClause.FieldName} <= fromUnixTimeMilli({rangeClause.LTEValue})";
             }
 
-            // format used by Elasticsearch 7
+            // format used by Kibana 7
             else if (rangeClause.Format == "strict_date_optional_time")
             {
                 // default time filter through a rangeClause query uses epoch times with GTE+LTE
                 EnsureClause.IsNotNull(rangeClause.LTEValue, nameof(rangeClause.LTEValue));
 
-                rangeClause.KustoQL = $"{rangeClause.FieldName} >= {rangeClause.GTEValue} {KustoQLOperators.And} {rangeClause.FieldName} <= {rangeClause.LTEValue}";
+                var gte = ((JValue)rangeClause.GTEValue).Value<DateTime>().ToString("o");
+                var lte = ((JValue)rangeClause.LTEValue).Value<DateTime>().ToString("o");
+                rangeClause.KustoQL = $"{rangeClause.FieldName} >= datetime(\"{gte}\") {KustoQLOperators.And} {rangeClause.FieldName} <= datetime(\"{lte}\")";
             }
             else
             {

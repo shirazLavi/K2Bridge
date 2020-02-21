@@ -46,6 +46,13 @@ namespace K2Bridge.Tests.End2End
         }
 
         [Test]
+        [Description("/_msearch Kibana aggregation query returning two results")]
+        public void CompareElasticKusto_WhenMSearch_ES7()
+        {
+            ParallelQuery($"{FLIGHTSDIR}/MSearch_ES7.json");
+        }
+
+        [Test]
         [Description("/_msearch Kibana aggregation query with text filter")]
         public void CompareElasticKusto_WhenMSearchTextFilter_ResponsesAreEquivalent()
         {

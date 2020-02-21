@@ -89,6 +89,7 @@ namespace K2Bridge.KustoDAL
                 return;
             }
 
+            var sort = new List<object>();
             foreach (var sortField in query.SortFields)
             {
                 var value = row.Table.Columns.Contains(sortField) ? row[sortField] : null;
@@ -102,7 +103,12 @@ namespace K2Bridge.KustoDAL
                     value = TimeUtils.ToEpochMilliseconds((DateTime)value);
                 }
 
-                hit.Sort.Add(value);
+                sort.Add(value);
+            }
+
+            if (sort.Count > 0)
+            {
+                hit.Sort = sort.ToArray();
             }
         }
 

@@ -35,7 +35,7 @@ namespace UnitTests.K2Bridge.KustoDAL
               ""_type"": ""_doc"",
               ""_id"": null,
               ""_version"": 1,
-              ""_score"": null,
+              ""_score"": 0,
               ""_source"": {
                 ""instant"": ""2017-01-02T13:04:05.06"",
                 ""value"": 234,
