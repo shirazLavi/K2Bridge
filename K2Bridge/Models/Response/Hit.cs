@@ -26,7 +26,7 @@ namespace K2Bridge.Models.Response
         public int Version { get; set; } = VERSION;
 
         [JsonProperty("_score")]
-        public float Score { get; set; }
+        public object Score { get; set; }
 
         [JsonProperty("_source")]
         public JObject Source { get; } = new JObject();

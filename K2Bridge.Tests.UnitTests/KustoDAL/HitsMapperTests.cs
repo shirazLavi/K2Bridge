@@ -35,7 +35,7 @@ namespace UnitTests.K2Bridge.KustoDAL
               ""_type"": ""_doc"",
               ""_id"": null,
               ""_version"": 1,
-              ""_score"": 0,
+              ""_score"": null,
               ""_source"": {
                 ""instant"": ""2017-01-02T13:04:05.06"",
                 ""value"": 234,
@@ -43,8 +43,7 @@ namespace UnitTests.K2Bridge.KustoDAL
                 ""label2"": ""boxes"",
                 ""label3"": ""boxes of boxes""
               },
-              ""fields"": {},
-              ""sort"": []
+              ""fields"": {}
             }]";
             using (var sr = new StringReader(expectedStr))
             using (var jr = new JsonTextReader(sr) { DateParseHandling = DateParseHandling.None })
