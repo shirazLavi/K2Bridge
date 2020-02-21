@@ -13,13 +13,12 @@
 #   that DB (which shouldn't normally happen)
 stages:
 
-- stage: security_analysis
-  displayName: Security Analysis
-  dependsOn: []
+- stage: build
+  displayName: Build
   jobs:
 
-  - job: run_analysis
-    displayName: Run Analysis
+  - job: security_analysis
+    displayName: Security Analysis
 
     pool:
       # CredScan only runs on Windows
@@ -99,11 +98,6 @@ stages:
         alertWarningLevel: 'Medium'
         failOnAlert: true
 
-- stage: build
-  displayName: Build
-  dependsOn: []
-  jobs:
-
   - job: build_and_unittest
     displayName: Build with UnitTests
     steps:
@@ -138,9 +132,11 @@ stages:
         pathToSources: '$(Build.SourcesDirectory)/K2Bridge/'
         failIfCoverageEmpty: true
 
-  - job: push_artifacts
-    displayName: Push Artifacts to ACR
-    dependsOn: build_and_unittest
+  - job: build_images
+    displayName: Build images and charts
+    dependsOn:
+    - security_analysis
+    - build_and_unittest
     steps:
 
     - task: HelmInstaller@1
@@ -149,7 +145,7 @@ stages:
         helmVersionToInstall: $(HELM_VERSION)
 
     - task: AzureCLI@1
-      displayName: Login to ACR
+      displayName: Build images and charts
       inputs:
         azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
         scriptLocation: inlineScript
@@ -159,47 +155,29 @@ stages:
           az configure --defaults acr="$ACR_NAME"
           az acr login
 
-    - bash: |
-        set -eux  # fail on error
-
         # Build runtime Docker image
         # Reuses the cached build stage from the previous docker build task
         docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
           -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
           .
-      displayName: Build Runtime Image
 
-    - task: AzureCLI@1
-      displayName: Push Image
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eux  # fail on error
+          # Build end-to-end test image
+          docker build --target end2endtest \
+            --build-arg VersionPrefix="$SEMANTIC_VERSION" \
+            -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
+          .
 
-          # Push Docker image
+          # Push Docker image to ACR
           docker push "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION"
+          docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
 
-    - task: AzureCLI@1
-      displayName: Push Helm Charts to ACR
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          # Push Helm chart
+          # Push Helm chart to ACR
           helm repo add elastic https://helm.elastic.co
           helm repo update
           helm dependency update charts/k2bridge
           empty_dir="$(Build.StagingDirectory)/charts_out"
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
-
-- stage: integration
-  displayName: Integration Tests
-  dependsOn:
-  - security_analysis
-  - build
-  jobs:
 
   - job: Terraform
     displayName: Prepare Terraform
@@ -230,28 +208,14 @@ stages:
         TerraformEnvVariables:
           TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
 
-  # Deploy a new Kusto db
-  # Either if the db name is not set to 'demo' which means it is the Dev CI process
-  # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
-  - job: Deploy_Kusto
-    displayName: Provision a new Kusto database
-    condition: or(and(succeeded(), not(eq(variables['KUSTO_DB'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
-    dependsOn: Terraform
-    steps:
-
-        - task: AzureCLI@1
-          displayName: Provision Kusto database
-          inputs:
-            azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
-            scriptLocation: inlineScript
-            inlineScript: |
-              set -eux  # fail on error
-              az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
-
-  - job: Deploy_K2Bridge
-    displayName: Deploy K2Bridge
-    dependsOn: Terraform
+- stage: integration_tests
+  displayName: Integration Tests
+  jobs:
+  - job: Tests
     variables:
+      CHART_NAME: k2bridge
+      ES_QA_NAME: elasticsearchqa
+      ES_VERSION: 6.8.5
       ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
         NOT_MASTER_ES_CONFIG: "--set elasticsearch.replicas=2 --set elasticsearch.minimumMasterNodes=2"
     steps:
@@ -275,12 +239,15 @@ stages:
         # List charts before deploying (for job log, useful if rerunning job)
         helm list
         # Deploy chart
-        helm upgrade --install k2bridge $(ACR_NAME)/k2bridge \
+        helm upgrade --install "$(CHART_NAME)" $(ACR_NAME)/k2bridge \
           --version "$SEMANTIC_VERSION" \
-          --wait --timeout 30m \
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
           --set image.tag=$SEMANTIC_VERSION \
           --set replicaCount=2 \
+          --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
+          --set elasticsearch.clusterName="$(CHART_NAME)-es" \
+          --set elasticsearch.masterService="$(CHART_NAME)-es-master" \
+          --set settings.metadataElasticAddress="http://$(CHART_NAME)-es-master:9200" \
           --set settings.adxClusterUrl="$KUSTO_URI" \
           --set settings.adxDefaultDatabaseName="$(KUSTO_DB)" \
           --set settings.aadClientId="$(AKS_SP_CLIENT_ID)" \
@@ -292,34 +259,18 @@ stages:
           ${NOT_MASTER_ES_CONFIG:-} #defaults to an empty string
         # List charts after deploying (for job log)
         helm list
-      displayName: Install Helm chart
+      displayName: Install K2Bridge
       env:
         secret: $(AKS_SP_CLIENT_SECRET)
-
-    - bash: |
-        set -eux
-        kubectl run --attach --rm --restart=Never --image=curlimages/curl smoke-test-$RANDOM -- \
-          --max-time 5 --retry 99999 --retry-max-time 1200 http://k2bridge:8080
-      displayName: Smoke test
-
-  - job: Deploy_Elasticsearch
-    displayName: Deploy Elasticsearch
-    dependsOn: Terraform
-    variables:
-      KUBERNETES_NAMESPACE: $[dependencies.Terraform.outputs['GenerateNS.KUBERNETES_NAMESPACE']]
-    steps:
-
-    - template: infrastructure/setup-k8s-clients-template.yml
 
     - bash: |
         set -eux  # fail on error
         helm list
         helm repo add elastic https://helm.elastic.co
-        helm upgrade --install elasticsearchqa elastic/elasticsearch \
-          --wait --timeout 45m \
+        helm upgrade --install "$(ES_QA_NAME)" elastic/elasticsearch \
           --set image=docker.elastic.co/elasticsearch/elasticsearch-oss \
-          --set imageTag=6.8.5 \
-          --set clusterName=elasticsearchqa \
+          --set imageTag="$(ES_VERSION)" \
+          --set clusterName="$(ES_QA_NAME)" \
           --set replicas=1 \
           --set persistence.enabled=false \
           --set minimumMasterNodes=1 \
@@ -330,52 +281,29 @@ stages:
           --set limits.cpu="1000m" \
           --set limits.memory="2048M"
 
-      displayName: Deploy Elasticsearch
+      displayName: Install Elasticsearch
 
-  - job: e2e_image
-    displayName: Prepare E2E Image
-    steps:
-
+    # Deploy a new Kusto db
+    # Either if the db name is not set to 'demo' which means it is the Dev CI process
+    # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
     - task: AzureCLI@1
-      displayName: Login to ACR
+      displayName: Provision Kusto database
+      condition: or(and(succeeded(), not(eq(variables['KUSTO_DB'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
       inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
+        azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
         scriptLocation: inlineScript
         inlineScript: |
           set -eux  # fail on error
-
-          az configure --defaults acr="$ACR_NAME"
-          az acr login
+          az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
 
     - bash: |
-          # Build end-to-end test image
-          docker build --target end2endtest \
-            --build-arg VersionPrefix="$SEMANTIC_VERSION" \
-            -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
-            .
-      displayName: Build E2E-Test Image
-
-    - task: AzureCLI@1
-      displayName: Push Image
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
-
-  - job: Test
-    displayName: Run Tests
-    dependsOn:
-    - Terraform
-    - Deploy_Kusto
-    - Deploy_K2Bridge
-    - Deploy_Elasticsearch
-    - e2e_image
-    variables:
-      KUBERNETES_NAMESPACE: $[dependencies.Terraform.outputs['GenerateNS.KUBERNETES_NAMESPACE']]
-    steps:
-
-    - template: infrastructure/setup-k8s-clients-template.yml
+        set -eux
+        kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
+        kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
+        kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
+        kubectl run --attach --rm --restart=Never --image=busybox smoke-test-$(CHART_NAME) -- \
+          wget -O- http://$(CHART_NAME):8080
+      displayName: Await & smoke test
 
     - task: AzureCLI@1
       displayName: End-to-end test
@@ -384,13 +312,13 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           set -eu  # fail on error
-          podName="e2e-test-$RANDOM"
+          podName="e2e-test-$CHART_NAME"
           KUSTO_URI=$(az kusto cluster show -g $(RESOURCE_GROUP) -n $(KUSTO_NAME) --query uri -o tsv)
           AAD_TOKEN=$(az account get-access-token --resource "$KUSTO_URI" --query accessToken -o tsv)
           kubectl run --restart=Never \
             --image=$(ACR_NAME).azurecr.io/k2bridge-test:$SEMANTIC_VERSION \
-            --env=K2BRIDGE_URL=http://k2bridge:8080 \
-            --env=ELASTICSEARCH_URL=http://elasticsearchqa-master:9200 \
+            --env=K2BRIDGE_URL=http://$(CHART_NAME):8080 \
+            --env=ELASTICSEARCH_URL=http://"$(ES_QA_NAME)"-master:9200 \
             --env=KUSTO_URI=$KUSTO_URI \
             --env=KUSTO_DB=$(KUSTO_DB) \
             --env=AAD_TOKEN=$AAD_TOKEN \
@@ -410,10 +338,11 @@ stages:
         failTaskOnFailedTests: true
         testRunTitle: 'E2E Tests'
 
+- stage: Cleanup
+  dependsOn: integration_tests
+  jobs:
+
   - job: Cleanup
-    dependsOn:
-    - Terraform
-    - Test
     # Do not delete AKS namespace:
     # - if pipeline was canceled or failed before a Kubernetes namespace was generated
     # - if deploying on master branch
@@ -436,8 +365,7 @@ stages:
 
 - stage: release
   displayName: Release Artifacts
-  dependsOn:
-  - integration
+  dependsOn: integration_tests
   jobs:
 
   - job: Promote
