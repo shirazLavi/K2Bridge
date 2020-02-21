@@ -16,217 +16,219 @@ stages:
 - stage: build
   displayName: Build
   jobs:
+  - job: empty
+    pool: server
 
-  - job: security_analysis
-    displayName: Security Analysis
+# - job: security_analysis
+#   displayName: Security Analysis
 
-    pool:
-      # CredScan only runs on Windows
-      vmImage: 'windows-latest'
+#   pool:
+#     # CredScan only runs on Windows
+#     vmImage: 'windows-latest'
 
-    steps:
-    - task: CredScan@2
-      displayName: 'Find credentials in source code'
-      inputs:
-        toolMajorVersion: 'V2'
+#   steps:
+#   - task: CredScan@2
+#     displayName: 'Find credentials in source code'
+#     inputs:
+#       toolMajorVersion: 'V2'
 
-    - task: SdtReport@1
-      displayName: 'Security analysis report'
-      inputs:
-        AllTools: false
-        APIScan: false
-        BinSkim: false
-        CodesignValidation: false
-        CredScan: true
-        FortifySCA: false
-        FxCop: false
-        ModernCop: false
-        MSRD: false
-        PoliCheck: false
-        RoslynAnalyzers: false
-        SDLNativeRules: false
-        Semmle: false
-        TSLint: false
-        ToolLogsNotFoundAction: 'Standard'
+#   - task: SdtReport@1
+#     displayName: 'Security analysis report'
+#     inputs:
+#       AllTools: false
+#       APIScan: false
+#       BinSkim: false
+#       CodesignValidation: false
+#       CredScan: true
+#       FortifySCA: false
+#       FxCop: false
+#       ModernCop: false
+#       MSRD: false
+#       PoliCheck: false
+#       RoslynAnalyzers: false
+#       SDLNativeRules: false
+#       Semmle: false
+#       TSLint: false
+#       ToolLogsNotFoundAction: 'Standard'
 
-    - task: PublishSecurityAnalysisLogs@2
-      displayName: 'Publish security analysis logs'
-      inputs:
-        ArtifactName: 'CodeAnalysisLogs'
-        ArtifactType: 'Container'
-        AllTools: false
-        AntiMalware: false
-        APIScan: false
-        BinSkim: false
-        CodesignValidation: false
-        CredScan: true
-        FortifySCA: false
-        FxCop: false
-        ModernCop: false
-        MSRD: false
-        PoliCheck: false
-        RoslynAnalyzers: false
-        SDLNativeRules: false
-        Semmle: false
-        TSLint: false
-        WebScout: false
-        ToolLogsNotFoundAction: 'Standard'
+#   - task: PublishSecurityAnalysisLogs@2
+#     displayName: 'Publish security analysis logs'
+#     inputs:
+#       ArtifactName: 'CodeAnalysisLogs'
+#       ArtifactType: 'Container'
+#       AllTools: false
+#       AntiMalware: false
+#       APIScan: false
+#       BinSkim: false
+#       CodesignValidation: false
+#       CredScan: true
+#       FortifySCA: false
+#       FxCop: false
+#       ModernCop: false
+#       MSRD: false
+#       PoliCheck: false
+#       RoslynAnalyzers: false
+#       SDLNativeRules: false
+#       Semmle: false
+#       TSLint: false
+#       WebScout: false
+#       ToolLogsNotFoundAction: 'Standard'
 
-    - task: PostAnalysis@1
-      displayName: 'Post security analysis'
-      inputs:
-        AllTools: false
-        APIScan: false
-        BinSkim: false
-        CodesignValidation: false
-        CredScan: true
-        FortifySCA: false
-        FxCop: false
-        ModernCop: false
-        PoliCheck: false
-        RoslynAnalyzers: false
-        SDLNativeRules: false
-        Semmle: false
-        TSLint: false
-        VstsConsole: false
-        ToolLogsNotFoundAction: 'Standard'
+#   - task: PostAnalysis@1
+#     displayName: 'Post security analysis'
+#     inputs:
+#       AllTools: false
+#       APIScan: false
+#       BinSkim: false
+#       CodesignValidation: false
+#       CredScan: true
+#       FortifySCA: false
+#       FxCop: false
+#       ModernCop: false
+#       PoliCheck: false
+#       RoslynAnalyzers: false
+#       SDLNativeRules: false
+#       Semmle: false
+#       TSLint: false
+#       VstsConsole: false
+#       ToolLogsNotFoundAction: 'Standard'
 
-    - task: ComponentGovernanceComponentDetection@0
-      inputs:
-        scanType: 'Register'
-        verbosity: 'Verbose'
-        alertWarningLevel: 'Medium'
-        failOnAlert: true
+#   - task: ComponentGovernanceComponentDetection@0
+#     inputs:
+#       scanType: 'Register'
+#       verbosity: 'Verbose'
+#       alertWarningLevel: 'Medium'
+#       failOnAlert: true
 
-  - job: build_and_unittest
-    displayName: Build with UnitTests
-    steps:
+# - job: build_and_unittest
+#   displayName: Build with UnitTests
+#   steps:
 
-    - bash: |
-        # Only build first stage of Dockerfile (build and unit test)
-        docker build --target build --build-arg VersionPrefix="$(SEMANTIC_VERSION)" -t k2bridge-build .
-        # Temporarily create container in order to extract test results file
-        id=$(docker create k2bridge-build)
-        docker cp $id:/app/TestResult.xml .
-        docker cp $id:/app/K2Bridge.Tests.UnitTests/coverage.cobertura.xml .
-        docker rm $id
-      displayName: Docker build & test
+#   - bash: |
+#       # Only build first stage of Dockerfile (build and unit test)
+#       docker build --target build --build-arg VersionPrefix="$(SEMANTIC_VERSION)" -t k2bridge-build .
+#       # Temporarily create container in order to extract test results file
+#       id=$(docker create k2bridge-build)
+#       docker cp $id:/app/TestResult.xml .
+#       docker cp $id:/app/K2Bridge.Tests.UnitTests/coverage.cobertura.xml .
+#       docker rm $id
+#     displayName: Docker build & test
 
-    - task: PublishTestResults@2
-      displayName: Publish test results
-      condition: succeededOrFailed()
-      inputs:
-        testRunner: VSTest
-        testResultsFiles: 'TestResult.xml'
-        failTaskOnFailedTests: true
-        testRunTitle: 'Unit Tests'
+#   - task: PublishTestResults@2
+#     displayName: Publish test results
+#     condition: succeededOrFailed()
+#     inputs:
+#       testRunner: VSTest
+#       testResultsFiles: 'TestResult.xml'
+#       failTaskOnFailedTests: true
+#       testRunTitle: 'Unit Tests'
 
-    # Publish the code coverage result (summary and web site)
-    # The summary allows to view the coverage percentage in the summary tab
-    # The web site allows to view which lines are covered directly in Azure Pipeline
-    - task: PublishCodeCoverageResults@1
-      displayName: 'Publish code coverage'
-      inputs:
-        codeCoverageTool: 'Cobertura'
-        summaryFileLocation: 'coverage.cobertura.xml'
-        pathToSources: '$(Build.SourcesDirectory)/K2Bridge/'
-        failIfCoverageEmpty: true
+#   # Publish the code coverage result (summary and web site)
+#   # The summary allows to view the coverage percentage in the summary tab
+#   # The web site allows to view which lines are covered directly in Azure Pipeline
+#   - task: PublishCodeCoverageResults@1
+#     displayName: 'Publish code coverage'
+#     inputs:
+#       codeCoverageTool: 'Cobertura'
+#       summaryFileLocation: 'coverage.cobertura.xml'
+#       pathToSources: '$(Build.SourcesDirectory)/K2Bridge/'
+#       failIfCoverageEmpty: true
 
-  - job: push_artifacts
-    displayName: Push Artifacts to ACR
-    dependsOn:
-    - security_analysis
-    - build_and_unittest
-    steps:
+# - job: push_artifacts
+#   displayName: Push Artifacts to ACR
+#   dependsOn:
+#   - security_analysis
+#   - build_and_unittest
+#   steps:
 
-    - task: HelmInstaller@1
-      displayName: Helm installer
-      inputs:
-        helmVersionToInstall: $(HELM_VERSION)
+#   - task: HelmInstaller@1
+#     displayName: Helm installer
+#     inputs:
+#       helmVersionToInstall: $(HELM_VERSION)
 
-    - task: AzureCLI@1
-      displayName: Login to ACR
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eux  # fail on error
+#   - task: AzureCLI@1
+#     displayName: Login to ACR
+#     inputs:
+#       azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
+#       scriptLocation: inlineScript
+#       inlineScript: |
+#         set -eux  # fail on error
 
-          az configure --defaults acr="$ACR_NAME"
-          az acr login
+#         az configure --defaults acr="$ACR_NAME"
+#         az acr login
 
-    - bash: |
-        set -eux  # fail on error
+#   - bash: |
+#       set -eux  # fail on error
 
-        # Build runtime Docker image
-        # Reuses the cached build stage from the previous docker build task
-        docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
-          -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
-          .
+#       # Build runtime Docker image
+#       # Reuses the cached build stage from the previous docker build task
+#       docker build --build-arg VersionPrefix="$SEMANTIC_VERSION" \
+#         -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION" \
+#         .
 
-          # Build end-to-end test image
-          docker build --target end2endtest \
-            --build-arg VersionPrefix="$SEMANTIC_VERSION" \
-            -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
-          .
+#         # Build end-to-end test image
+#         docker build --target end2endtest \
+#           --build-arg VersionPrefix="$SEMANTIC_VERSION" \
+#           -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION" \
+#         .
 
-      displayName: Build Docker Images
+#     displayName: Build Docker Images
 
 
-    - task: AzureCLI@1
-      displayName: Push Image
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eux  # fail on error
+#   - task: AzureCLI@1
+#     displayName: Push Image
+#     inputs:
+#       azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
+#       scriptLocation: inlineScript
+#       inlineScript: |
+#         set -eux  # fail on error
 
-          # Push Docker image
-          docker push "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION"
-          docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
+#         # Push Docker image
+#         docker push "$ACR_NAME.azurecr.io/k2bridge:$SEMANTIC_VERSION"
+#         docker push "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTIC_VERSION"
 
-    - task: AzureCLI@1
-      displayName: Push Helm Charts to ACR
-      inputs:
-        azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          # Push Helm chart
-          helm repo add elastic https://helm.elastic.co
-          helm repo update
-          helm dependency update charts/k2bridge
-          empty_dir="$(Build.StagingDirectory)/charts_out"
-          helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
-          az acr helm push --force "$(ls $empty_dir/*)"
+#   - task: AzureCLI@1
+#     displayName: Push Helm Charts to ACR
+#     inputs:
+#       azureSubscription: $(ACR_PUSH_SERVICE_CONNECTION)
+#       scriptLocation: inlineScript
+#       inlineScript: |
+#         # Push Helm chart
+#         helm repo add elastic https://helm.elastic.co
+#         helm repo update
+#         helm dependency update charts/k2bridge
+#         empty_dir="$(Build.StagingDirectory)/charts_out"
+#         helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
+#         az acr helm push --force "$(ls $empty_dir/*)"
 
-  - job: Terraform
-    displayName: Prepare Terraform
-    steps:
+# - job: Terraform
+#   displayName: Prepare Terraform
+#   steps:
 
-    - bash: |
-        set -eu
-        az login --service-principal --username $(AKS_SP_CLIENT_ID) --password "$password" --tenant $(TENANT_ID)
-        oid=$(az ad sp show --id  $(AKS_SP_CLIENT_ID) --query objectId -o tsv)
-        echo "##vso[task.setvariable variable=AKS_SP_OBJECT_ID]$oid"
-      displayName: Get AKS SP object ID
-      env:
-        password: $(AKS_SP_CLIENT_SECRET)
+#   - bash: |
+#       set -eu
+#       az login --service-principal --username $(AKS_SP_CLIENT_ID) --password "$password" --tenant $(TENANT_ID)
+#       oid=$(az ad sp show --id  $(AKS_SP_CLIENT_ID) --query objectId -o tsv)
+#       echo "##vso[task.setvariable variable=AKS_SP_OBJECT_ID]$oid"
+#     displayName: Get AKS SP object ID
+#     env:
+#       password: $(AKS_SP_CLIENT_SECRET)
 
-    - template: infrastructure/terraform-tasks-template.yml
-      parameters:
-        TerraformArguments: >-
-          -var resource_group=$(RESOURCE_GROUP)
-          -var vnet_name=$(VNET_NAME)
-          -var aks_name=$(AKS_NAME)
-          -var aks_version=$(AKS_VERSION)
-          -var aks_sp_client_id=$(AKS_SP_CLIENT_ID)
-          -var aks_sp_object_id=$(AKS_SP_OBJECT_ID)
-          -var kusto_name=$(KUSTO_NAME)
-          -var kusto_admin_sp_object_id=$(AKS_SP_OBJECT_ID)
-        # For additional security, pass secret through environment instead of command line.
-        # Terraform recognizes TF_VAR prefixed environment variables.
-        TerraformEnvVariables:
-          TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
+#   - template: infrastructure/terraform-tasks-template.yml
+#     parameters:
+#       TerraformArguments: >-
+#         -var resource_group=$(RESOURCE_GROUP)
+#         -var vnet_name=$(VNET_NAME)
+#         -var aks_name=$(AKS_NAME)
+#         -var aks_version=$(AKS_VERSION)
+#         -var aks_sp_client_id=$(AKS_SP_CLIENT_ID)
+#         -var aks_sp_object_id=$(AKS_SP_OBJECT_ID)
+#         -var kusto_name=$(KUSTO_NAME)
+#         -var kusto_admin_sp_object_id=$(AKS_SP_OBJECT_ID)
+#       # For additional security, pass secret through environment instead of command line.
+#       # Terraform recognizes TF_VAR prefixed environment variables.
+#       TerraformEnvVariables:
+#         TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
 
 - template: integration-tests-template.yml
   parameters:
