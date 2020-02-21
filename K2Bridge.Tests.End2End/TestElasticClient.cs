@@ -150,6 +150,7 @@ namespace K2Bridge.Tests.End2End
                 }
             }
 
+            // Standardize timestamp format
             // (Elasticsearch truncates time if T00:00:00)
             var timestampSourceValues = result.SelectTokens($"responses[*].hits.hits[*]._source.timestamp");
             foreach (JValue v in timestampSourceValues)
@@ -168,6 +169,7 @@ namespace K2Bridge.Tests.End2End
                 v.Value = 0f;
             }
 
+            // Elasticsearch 7 does not return empty sort array
             var emptySorts = result.SelectTokens($"responses[*].hits.hits[*].sort");
             foreach (JArray v in emptySorts)
             {

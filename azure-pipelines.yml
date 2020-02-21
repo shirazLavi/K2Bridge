@@ -206,7 +206,7 @@ stages:
 - stage: integration_tests
   displayName: Integration Tests
   jobs:
-  - job: Tests
+  - job: Test
     strategy:
       matrix: 
         Elasticsearch6:

@@ -50,7 +50,8 @@ namespace K2Bridge.Tests.End2End
         [Description("/_msearch Kibana aggregation query returning two results")]
         public void CompareElasticKusto_WhenMSearch_ES7()
         {
-            // Use ES6 compatible query
+            // Use Elasticsearch 6 compatible query if backend is Elasticsearch 6
+            // (`interval` attribute renamed to `fixed_interval` in Elasticsearch 7)
             string esQueryFile;
             var es = ESClient().ClusterInfo();
             var esVersion = es.Result.SelectToken("version.number");
