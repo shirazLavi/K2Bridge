@@ -13,9 +13,8 @@
 #   that DB (which shouldn't normally happen)
 stages:
 
-- stage: security_analysis
-  displayName: Security Analysis
-  dependsOn: []
+- stage: build
+  displayName: Build
   jobs:
 
   - job: run_analysis
@@ -98,11 +97,6 @@ stages:
         verbosity: 'Verbose'
         alertWarningLevel: 'Medium'
         failOnAlert: true
-
-- stage: build
-  displayName: Build
-  dependsOn: []
-  jobs:
 
   - job: build_and_unittest
     displayName: Build with UnitTests
@@ -203,9 +197,6 @@ stages:
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
 
-- stage: Terraform
-  dependsOn: []
-  jobs:
   - job: Terraform
     displayName: Prepare Terraform
     steps:
@@ -234,16 +225,6 @@ stages:
         # Terraform recognizes TF_VAR prefixed environment variables.
         TerraformEnvVariables:
           TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
-
-- stage: build_complete
-  displayName: Build Completed
-  dependsOn:
-  - security_analysis
-  - build
-  - terraform
-  jobs:
-  - job: empty
-    pool: server
 
 - template: integration-tests-template.yml
   parameters:

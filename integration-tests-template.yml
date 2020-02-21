@@ -8,7 +8,7 @@ stages:
 - stage: ${{ parameters.name }}
   displayName: ${{ parameters.displayName }}
   dependsOn:
-  - build_complete
+  - build
   variables:
     KUSTO_DB_NAME: $(KUSTO_DB)${{ parameters.suffix }}
     CHART_NAME: k2bridge${{ parameters.suffix }}
