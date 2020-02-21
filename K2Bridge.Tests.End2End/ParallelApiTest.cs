@@ -4,6 +4,7 @@
 
 namespace K2Bridge.Tests.End2End
 {
+    using System;
     using FluentAssertions.Json;
     using Newtonsoft.Json.Linq;
     using NUnit.Framework;
@@ -53,7 +54,7 @@ namespace K2Bridge.Tests.End2End
             string esQueryFile;
             var es = ESClient().ClusterInfo();
             var esVersion = es.Result.SelectToken("version.number");
-            if (esVersion.Value<string>().StartsWith("6"))
+            if (esVersion.Value<string>().StartsWith("6", StringComparison.OrdinalIgnoreCase))
             {
                 esQueryFile = $"{FLIGHTSDIR}/MSearch_ES7-ES6-compat.json";
             }
