@@ -236,12 +236,12 @@ stages:
   - job: Tests
     strategy:
       matrix: 
-        Integration6:
+        Elasticsearch6:
           KUSTO_DB_NAME: $(KUSTO_DB)
           CHART_NAME: k2bridge
           ES_QA_NAME: elasticsearchqa
           ES_VERSION: 6.8.5
-        Integration7:
+        Elasticsearch7:
           KUSTO_DB_NAME: $(KUSTO_DB)7
           CHART_NAME: k2bridge7
           ES_QA_NAME: elasticsearchqa7
