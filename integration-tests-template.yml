@@ -8,9 +8,7 @@ stages:
 - stage: ${{ parameters.name }}
   displayName: ${{ parameters.displayName }}
   dependsOn:
-  - security_analysis
-  - build
-  - terraform
+  - build_complete
   variables:
     KUSTO_DB_NAME: $(KUSTO_DB)${{ parameters.suffix }}
     CHART_NAME: k2bridge${{ parameters.suffix }}
