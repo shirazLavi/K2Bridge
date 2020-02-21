@@ -335,14 +335,14 @@ stages:
 
 - stage: Cleanup
   dependsOn: integration_tests
+  # Do not delete AKS namespace:
+  # - if pipeline was canceled or failed before a Kubernetes namespace was generated
+  # - if deploying on master branch
+  # - if namespace was manually set with RUN_SET_NAMESPACE
+  condition: and(always(), not(variables['RUN_SET_NAMESPACE']))
   jobs:
 
   - job: Cleanup
-    # Do not delete AKS namespace:
-    # - if pipeline was canceled or failed before a Kubernetes namespace was generated
-    # - if deploying on master branch
-    # - if namespace was manually set with RUN_SET_NAMESPACE
-    condition: and(always(), not(variables['RUN_SET_NAMESPACE']))
     steps:
 
     - template: infrastructure/setup-k8s-clients-template.yml
