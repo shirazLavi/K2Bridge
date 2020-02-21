@@ -13,11 +13,6 @@
 #   that DB (which shouldn't normally happen)
 stages:
 
-- stage: x
-  jobs:
-  - job: string
-    pool: server
-
 - stage: security_analysis
   displayName: Security Analysis
   dependsOn: []
@@ -240,6 +235,15 @@ stages:
         TerraformEnvVariables:
           TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
 
+- stage: build_complete
+  dependsOn:
+  - security_analysis
+  - build
+  - terraform
+  jobs:
+  - job: empty
+    pool: server
+
 - template: integration-tests-template.yml
   parameters:
     name: integration6
@@ -281,11 +285,18 @@ stages:
           kubectl delete namespace "$KUBERNETES_NAMESPACE"
           az kusto database delete -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)" -y
 
-- stage: release
-  displayName: Release Artifacts
+- stage: tests_complete
   dependsOn:
   - integration6
   - integration7
+  jobs:
+  - job: empty
+    pool: server
+
+- stage: release
+  displayName: Release Artifacts
+  dependsOn:
+  - tests_complete
   jobs:
 
   - job: Promote
