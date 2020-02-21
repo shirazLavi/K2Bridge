@@ -13,6 +13,8 @@
 #   that DB (which shouldn't normally happen)
 stages:
 
+- stage: x
+
 - stage: security_analysis
   displayName: Security Analysis
   dependsOn: []
@@ -280,6 +282,7 @@ stages:
   displayName: Release Artifacts
   dependsOn:
   - integration6
+  - integration7
   jobs:
 
   - job: Promote
