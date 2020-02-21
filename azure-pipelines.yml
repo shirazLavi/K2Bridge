@@ -244,7 +244,7 @@ stages:
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
           --set image.tag=$SEMANTIC_VERSION \
           --set replicaCount=2 \
-          --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
+          --set elasticsearch.imageTag="$(ES_VERSION)" \
           --set elasticsearch.clusterName="$(CHART_NAME)-es" \
           --set elasticsearch.masterService="$(CHART_NAME)-es-master" \
           --set settings.metadataElasticAddress="http://$(CHART_NAME)-es-master:9200" \
