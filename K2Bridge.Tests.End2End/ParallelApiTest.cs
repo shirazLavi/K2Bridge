@@ -234,8 +234,9 @@ namespace K2Bridge.Tests.End2End
             var hitsCollections = result.SelectTokens("responses[*].hits.hits");
             foreach (JArray arr in hitsCollections)
             {
-                arr.Replace(new JValue(arr.Count()));
+                arr.Replace(new JValue(arr.Count));
             }
+
             return result;
         }
     }
