@@ -175,7 +175,7 @@ stages:
           az acr helm push --force "$(ls $empty_dir/*)"
 
   - job: Terraform
-    displayName: Prepare Terraform
+    displayName: Terraform
     steps:
 
     - bash: |
