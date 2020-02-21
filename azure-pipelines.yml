@@ -260,8 +260,7 @@ stages:
 
 - stage: Cleanup
   dependsOn:
-  - integration6
-  - integration7
+  - tests_complete
   jobs:
 
   - job: Cleanup
