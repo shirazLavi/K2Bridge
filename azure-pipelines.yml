@@ -236,6 +236,7 @@ stages:
           TF_VAR_aks_sp_client_secret: $(AKS_SP_CLIENT_SECRET)
 
 - stage: build_complete
+  displayName: Build Completed
   dependsOn:
   - security_analysis
   - build
@@ -285,6 +286,7 @@ stages:
           az kusto database delete -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)" -y
 
 - stage: tests_complete
+  displayName: Tests Completed
   dependsOn:
   - integration6
   - integration7
