@@ -7,6 +7,7 @@ namespace UnitTests.K2Bridge.JsonConverters
     using System.Collections.Generic;
     using global::K2Bridge.Models.Request;
     using global::K2Bridge.Models.Request.Queries;
+    using Newtonsoft.Json.Linq;
     using NUnit.Framework;
 
     [TestFixture]
@@ -19,6 +20,25 @@ namespace UnitTests.K2Bridge.JsonConverters
                         {""range"":
                             {""timestamp"":
                                 {""gte"":0,""lte"":10,""format"":""epoch_millis""}
+                            }
+                        }
+                    ],
+                    ""filter"":
+                    [
+                        {""match_all"":{}}
+                    ],
+                    ""should"":[],
+                    ""must_not"":[]
+                }
+            }";
+
+        private const string QueryTimestampRangeSingleES7 = @"
+            {""bool"":
+                {""must"":
+                    [
+                        {""range"":
+                            {""timestamp"":
+                                { ""format"": ""strict_date_optional_time"", ""gte"": ""1970-01-01T00:00:00.000Z"", ""lte"": ""1970-01-01T00:00:00.010Z"" }
                             }
                         }
                     ],
@@ -89,6 +109,26 @@ namespace UnitTests.K2Bridge.JsonConverters
             },
         };
 
+        private static readonly Query ExpectedValidQueryTimestampRangeES7 = new Query
+        {
+            Bool = new BoolQuery
+            {
+                Must = new List<IQuery> {
+                    new RangeClause()
+                    {
+                        FieldName = "timestamp",
+                        GTEValue = new JValue("1970-01-01T00:00:00Z"),
+                        LTEValue = new JValue("1970-01-01T00:00:00.01Z"),
+                        Format = "strict_date_optional_time",
+                    },
+                },
+                MustNot = new List<IQuery>(),
+                Should = new List<IQuery>(),
+                ShouldNot = new List<IQuery>(),
+                Filter = new List<IQuery> { null },
+            },
+        };
+
         private static readonly Query ExpectedValidQueryBetweenRange = new Query
         {
             Bool = new BoolQuery
@@ -129,6 +169,7 @@ namespace UnitTests.K2Bridge.JsonConverters
 
         private static readonly object[] RangeTestCases = {
             new TestCaseData(QueryTimestampRangeSingle, ExpectedValidQueryTimestampRange).SetName("JsonDeserializeObject_WithQuerySimpleTimestampRange_DeserializedCorrectly"),
+            new TestCaseData(QueryTimestampRangeSingleES7, ExpectedValidQueryTimestampRangeES7).SetName("JsonDeserializeObject_WithQuerySimpleTimestampRangeES7_DeserializedCorrectly"),
             new TestCaseData(QueryBetweenRangeSingle, ExpectedValidQueryBetweenRange).SetName("JsonDeserializeObject_WithQueryFieldBetweenRange_DeserializedCorrectly"),
             new TestCaseData(QueryTimestampRangeSingleNoPair, ExpectedValidQueryTimestampRangeSingleNoPair).SetName("JsonDeserializeObject_WithQueryTimestampRangeNoPair_DeserializedCorrectly"),
         };

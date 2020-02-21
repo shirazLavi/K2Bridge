@@ -6,6 +6,7 @@ namespace UnitTests.K2Bridge.Visitors
 {
     using global::K2Bridge.Models.Request.Queries;
     using global::K2Bridge.Visitors;
+    using Newtonsoft.Json.Linq;
     using NUnit.Framework;
 
     [TestFixture]
@@ -28,6 +29,17 @@ namespace UnitTests.K2Bridge.Visitors
         public string TestEpochBasicRangeVisitor()
         {
             var rangeClause = CreateRangeClause("myField", 1212121121, null, 2121212121, null, "epoch_millis");
+
+            return VisitRangeClause(rangeClause);
+        }
+
+        [TestCase(
+            ExpectedResult =
+            "myField >= datetime(\"2018-01-01T00:00:00.0000000Z\") and myField <= datetime(\"2018-01-01T02:00:00.0000000Z\")",
+            TestName = "Visit_WithEpochInputES7_ReturnsValidResponse")]
+        public string TestEpochBasicRangeES7Visitor()
+        {
+            var rangeClause = CreateRangeClause("myField", new JValue("2018-01-01T00:00:00.000Z"), null, new JValue("2018-01-01T02:00:00.000Z"), null, "strict_date_optional_time");
 
             return VisitRangeClause(rangeClause);
         }
@@ -82,7 +94,7 @@ namespace UnitTests.K2Bridge.Visitors
         private static RangeClause CreateRangeClause(
 #pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 #pragma warning disable SA1114 // Parameter list should follow declaration
-            string fieldName, decimal? gte, decimal? gt, decimal? lte, decimal? lt, string? format)
+            string fieldName, object? gte, object? gt, object? lte, object? lt, string? format)
 #pragma warning restore SA1114 // Parameter list should follow declaration
 #pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
         {

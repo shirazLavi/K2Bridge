@@ -35,8 +35,8 @@ namespace K2Bridge.Visitors
                 // default time filter through a rangeClause query uses epoch times with GTE+LTE
                 EnsureClause.IsNotNull(rangeClause.LTEValue, nameof(rangeClause.LTEValue));
 
-                var gte = ((JValue)rangeClause.GTEValue).Value<DateTime>().ToString("o");
-                var lte = ((JValue)rangeClause.LTEValue).Value<DateTime>().ToString("o");
+                var gte = ((JValue)rangeClause.GTEValue).Value<DateTime>().ToUniversalTime().ToString("o");
+                var lte = ((JValue)rangeClause.LTEValue).Value<DateTime>().ToUniversalTime().ToString("o");
                 rangeClause.KustoQL = $"{rangeClause.FieldName} >= datetime(\"{gte}\") {KustoQLOperators.And} {rangeClause.FieldName} <= datetime(\"{lte}\")";
             }
             else

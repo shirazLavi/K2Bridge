@@ -23,6 +23,18 @@ namespace UnitTests.K2Bridge.JsonConverters
                 }
             }}";
 
+        private const string DateHistogramAggregationES7 = @"
+            {""aggs"": { 
+                ""2"": {
+                    ""date_histogram"": {
+                        ""field"": ""timestamp"",
+                        ""fixed_interval"": ""1m"",
+                        ""time_zone"": ""Asia/Jerusalem"",
+                        ""min_doc_count"": 1
+                    }
+                }
+            }}";
+
         private const string CardinalityAggregation = @"
             {""aggs"": { 
                 ""2"": {
@@ -130,6 +142,7 @@ namespace UnitTests.K2Bridge.JsonConverters
 
         private static readonly object[] AggregationTestCases = {
             new TestCaseData(DateHistogramAggregation, ExpectedValidDateHistogramAggregation).SetName("JsonDeserializeObject_WithAggregationValidDateHistogram_DeserializedCorrectly"),
+            new TestCaseData(DateHistogramAggregationES7, ExpectedValidDateHistogramAggregation).SetName("JsonDeserializeObject_WithAggregationValidDateHistogramES7_DeserializedCorrectly"),
             new TestCaseData(CardinalityAggregation, ExpectedValidCardinalityAggregation).SetName("JsonDeserializeObject_WithAggregationValidCardinality_DeserializedCorrectly"),
             new TestCaseData(AvgAggregation, ExpectedValidAvgAggregation).SetName("JsonDeserializeObject_WithAggregationValidAvg_DeserializedCorrectly"),
             new TestCaseData(AvgEmptyFieldsAggregation, ExpectedNoFieldsAvgAggregation).SetName("JsonDeserializeObject_WithAggregationNoFieldsAvg_DeserializedCorrectly"),
