@@ -232,7 +232,6 @@ stages:
 
 - stage: integration_tests
   displayName: Integration Tests
-  variables:
   jobs:
   - job: Test
     displayName: Integration Test
