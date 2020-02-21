@@ -15,25 +15,12 @@ stages:
     ES_QA_NAME: elasticsearchqa${{ parameters.suffix }}
   jobs:
 
-  # Deploy a new Kusto db
-  # Either if the db name is not set to 'demo' which means it is the Dev CI process
-  # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
-  - job: Deploy_Kusto
-    displayName: Provision a new Kusto database
+  - job: Integration_Test
+    displayName: Integration Test
     variables:
       ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
         NOT_MASTER_ES_CONFIG: "--set elasticsearch.replicas=2 --set elasticsearch.minimumMasterNodes=2"
     steps:
-
-    - task: AzureCLI@1
-      displayName: Provision Kusto database
-      condition: or(and(succeeded(), not(eq(variables['KUSTO_DB_NAME'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB_NAME'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
-      inputs:
-        azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -eux  # fail on error
-          az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB_NAME)"
 
     - template: infrastructure/setup-k8s-clients-template.yml
 
@@ -59,10 +46,10 @@ stages:
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
           --set image.tag=$SEMANTIC_VERSION \
           --set replicaCount=2 \
-          --set metadataElasticAddress="http://$(CHART_NAME)-es-master:9200" \
           --set elasticsearch.imageTag=${{ parameters.elasticsearchVersion }} \
           --set elasticsearch.clusterName="$(CHART_NAME)-es" \
           --set elasticsearch.masterService="$(CHART_NAME)-es-master" \
+          --set settings.metadataElasticAddress="http://$(CHART_NAME)-es-master:9200" \
           --set settings.adxClusterUrl="$KUSTO_URI" \
           --set settings.adxDefaultDatabaseName="$(KUSTO_DB_NAME)" \
           --set settings.aadClientId="$(AKS_SP_CLIENT_ID)" \
@@ -97,13 +84,26 @@ stages:
 
       displayName: Install Elasticsearch
 
+    # Deploy a new Kusto db
+    # Either if the db name is not set to 'demo' which means it is the Dev CI process
+    # Or it is the Demo CI process AND the RUN_CREATE_DEMO_KUSTO was set
+    - task: AzureCLI@1
+      displayName: Provision Kusto database
+      condition: or(and(succeeded(), not(eq(variables['KUSTO_DB_NAME'], 'demo'))), and(succeeded(), eq(variables['KUSTO_DB_NAME'], 'demo'), variables['RUN_CREATE_DEMO_KUSTO']))
+      inputs:
+        azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -eux  # fail on error
+          az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB_NAME)"
+
     - bash: |
         set -eux
         kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
         kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
         kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
-        kubectl run --attach --rm --restart=Never --image=curlimages/curl smoke-test-$RANDOM -- \
-          --max-time 5 --retry 99999 --retry-max-time 1200 http://$(CHART_NAME):8080
+        kubectl run --attach --rm --restart=Never --image=busybox smoke-test-$(CHART_NAME) -- \
+          wget -O- http://$(CHART_NAME):8080
       displayName: Await & smoke test
 
     - task: AzureCLI@1
@@ -113,7 +113,7 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           set -eu  # fail on error
-          podName="e2e-test-$RANDOM"
+          podName="e2e-test-$CHART_NAME"
           KUSTO_URI=$(az kusto cluster show -g $(RESOURCE_GROUP) -n $(KUSTO_NAME) --query uri -o tsv)
           AAD_TOKEN=$(az account get-access-token --resource "$KUSTO_URI" --query accessToken -o tsv)
           kubectl run --restart=Never \
