@@ -20,15 +20,15 @@ namespace K2Bridge.Visitors
 
             dateHistogramAggregation.KustoQL =
                 $"{dateHistogramAggregation.Metric} by {dateHistogramAggregation.FieldName} = ";
-            if (!string.IsNullOrEmpty(dateHistogramAggregation.FixedInterval))
+            if (!string.IsNullOrEmpty(dateHistogramAggregation.Interval))
             {
-                var period = dateHistogramAggregation.FixedInterval[^1];
+                var period = dateHistogramAggregation.Interval[^1];
                 dateHistogramAggregation.KustoQL += period switch
                 {
                     'w' => $"{KustoQLOperators.StartOfWeek}({dateHistogramAggregation.FieldName})",
                     'M' => $"{KustoQLOperators.StartOfMonth}({dateHistogramAggregation.FieldName})",
                     'y' => $"{KustoQLOperators.StartOfYear}({dateHistogramAggregation.FieldName})",
-                    _ => $"bin({dateHistogramAggregation.FieldName}, {dateHistogramAggregation.FixedInterval})",
+                    _ => $"bin({dateHistogramAggregation.FieldName}, {dateHistogramAggregation.Interval})",
                 };
             }
             else

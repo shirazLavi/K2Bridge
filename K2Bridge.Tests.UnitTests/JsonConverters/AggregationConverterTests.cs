@@ -11,7 +11,7 @@ namespace UnitTests.K2Bridge.JsonConverters
     [TestFixture]
     public class AggregationConverterTests
     {
-        private const string DateHistogramAggregation = @"
+        private const string DateHistogramAggregationES6 = @"
             {""aggs"": { 
                 ""2"": {
                     ""date_histogram"": {
@@ -23,12 +23,24 @@ namespace UnitTests.K2Bridge.JsonConverters
                 }
             }}";
 
-        private const string DateHistogramAggregationES7 = @"
+        private const string DateHistogramAggregationES7Second = @"
             {""aggs"": { 
                 ""2"": {
                     ""date_histogram"": {
                         ""field"": ""timestamp"",
-                        ""fixed_interval"": ""1m"",
+                        ""fixed_interval"": ""1s"",
+                        ""time_zone"": ""Asia/Jerusalem"",
+                        ""min_doc_count"": 1
+                    }
+                }
+            }}";
+
+        private const string DateHistogramAggregationES7Year = @"
+            {""aggs"": { 
+                ""2"": {
+                    ""date_histogram"": {
+                        ""field"": ""timestamp"",
+                        ""calendar_interval"": ""1y"",
                         ""time_zone"": ""Asia/Jerusalem"",
                         ""min_doc_count"": 1
                     }
@@ -64,23 +76,6 @@ namespace UnitTests.K2Bridge.JsonConverters
                 ""noagg"" : { ""field"" : ""grade"" } 
             }
         }}";
-
-        private static readonly Aggregation ExpectedValidDateHistogramAggregation = new Aggregation()
-        {
-            PrimaryAggregation = null,
-            SubAggregations = new Dictionary<string, Aggregation>
-                {
-                    { "2", new Aggregation() {
-                        PrimaryAggregation = new DateHistogramAggregation {
-                            FieldName = "timestamp",
-                            FixedInterval = "1m",
-                            Metric = "count()",
-                            },
-                        SubAggregations = new Dictionary<string, Aggregation>(),
-                        }
-                    },
-                },
-        };
 
         private static readonly Aggregation ExpectedValidCardinalityAggregation = new Aggregation()
         {
@@ -141,8 +136,9 @@ namespace UnitTests.K2Bridge.JsonConverters
         };
 
         private static readonly object[] AggregationTestCases = {
-            new TestCaseData(DateHistogramAggregation, ExpectedValidDateHistogramAggregation).SetName("JsonDeserializeObject_WithAggregationValidDateHistogram_DeserializedCorrectly"),
-            new TestCaseData(DateHistogramAggregationES7, ExpectedValidDateHistogramAggregation).SetName("JsonDeserializeObject_WithAggregationValidDateHistogramES7_DeserializedCorrectly"),
+            new TestCaseData(DateHistogramAggregationES6, DateHist("1m")).SetName("JsonDeserializeObject_WithAggregationValidDateHistogramES6_DeserializedCorrectly"),
+            new TestCaseData(DateHistogramAggregationES7Second, DateHist("1s")).SetName("JsonDeserializeObject_WithAggregationValidDateHistogramES7Second_DeserializedCorrectly"),
+            new TestCaseData(DateHistogramAggregationES7Year, DateHist("1y")).SetName("JsonDeserializeObject_WithAggregationValidDateHistogramES7Year_DeserializedCorrectly"),
             new TestCaseData(CardinalityAggregation, ExpectedValidCardinalityAggregation).SetName("JsonDeserializeObject_WithAggregationValidCardinality_DeserializedCorrectly"),
             new TestCaseData(AvgAggregation, ExpectedValidAvgAggregation).SetName("JsonDeserializeObject_WithAggregationValidAvg_DeserializedCorrectly"),
             new TestCaseData(AvgEmptyFieldsAggregation, ExpectedNoFieldsAvgAggregation).SetName("JsonDeserializeObject_WithAggregationNoFieldsAvg_DeserializedCorrectly"),
@@ -153,6 +149,26 @@ namespace UnitTests.K2Bridge.JsonConverters
         public void TestAggregationConverter(string queryString, object expected)
         {
             queryString.AssertJsonString((Aggregation)expected);
+        }
+
+        private static Aggregation DateHist(string Interval)
+        {
+            return new Aggregation()
+            {
+                PrimaryAggregation = null,
+                SubAggregations = new Dictionary<string, Aggregation>
+                {
+                    { "2", new Aggregation() {
+                        PrimaryAggregation = new DateHistogramAggregation {
+                            FieldName = "timestamp",
+                            Interval = Interval,
+                            Metric = "count()",
+                            },
+                        SubAggregations = new Dictionary<string, Aggregation>(),
+                        }
+                    },
+                },
+            };
         }
     }
 }

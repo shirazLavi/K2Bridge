@@ -13,7 +13,7 @@ namespace K2Bridge.Models.Request.Aggregations
     {
         public string FieldName { get; set; }
 
-        public string FixedInterval { get; set; }
+        public string Interval { get; set; }
 
         /// <inheritdoc/>
         public override void Accept(IVisitor visitor)

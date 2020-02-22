@@ -27,8 +27,7 @@ namespace K2Bridge.JsonConverters
             {
                 FieldName = (string)jo["field"],
 
-                // Field name is "interval" with Kibana 6 and "fixed_interval" with Kibana 7
-                FixedInterval = (string)jo["fixed_interval"] ?? (string)jo["interval"],
+                Interval = (string)jo["interval"] ?? (string)jo["calendar_interval"] ?? (string)jo["fixed_interval"],
             };
 
             return obj;
