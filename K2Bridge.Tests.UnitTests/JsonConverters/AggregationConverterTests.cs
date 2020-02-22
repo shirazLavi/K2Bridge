@@ -151,7 +151,7 @@ namespace UnitTests.K2Bridge.JsonConverters
             queryString.AssertJsonString((Aggregation)expected);
         }
 
-        private static Aggregation DateHist(string Interval)
+        private static Aggregation DateHist(string interval)
         {
             return new Aggregation()
             {
@@ -161,7 +161,7 @@ namespace UnitTests.K2Bridge.JsonConverters
                     { "2", new Aggregation() {
                         PrimaryAggregation = new DateHistogramAggregation {
                             FieldName = "timestamp",
-                            Interval = Interval,
+                            Interval = interval,
                             Metric = "count()",
                             },
                         SubAggregations = new Dictionary<string, Aggregation>(),
