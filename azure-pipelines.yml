@@ -176,8 +176,7 @@ stages:
 
 - stage: terraform
   displayName: Terraform
-  dependsOn: []
-
+  dependsOn: []
   jobs:
   - job: Terraform
     steps:
