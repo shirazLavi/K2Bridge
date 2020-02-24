@@ -174,8 +174,11 @@ stages:
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
 
+- stage: terraform
+  displayName: Terraform
+  dependsOn: []
+
   - job: Terraform
-    displayName: Terraform
     steps:
 
     - bash: |
@@ -205,6 +208,9 @@ stages:
 
 - stage: integration_tests
   displayName: Integration Tests
+  dependsOn:
+  - build
+  - terraform
   jobs:
   - job: Tests
     variables:
