@@ -298,14 +298,14 @@ stages:
           set -eux  # fail on error
           az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
 
-    - bash: kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
+    - bash: kubectl rollout status deployment "$(CHART_NAME)" --timeout 5m
       displayName: Await K2 deployment
 
-    - bash: kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
-      displayName: Await K2 internal Elasticsearch deployment
-
-    - bash: kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
+    - bash: kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 5m
       displayName: Await Test Elasticsearch deployment
+
+    - bash: kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 20m
+      displayName: Await K2 internal Elasticsearch deployment
 
     - bash: |
         set -eux  # fail on error
