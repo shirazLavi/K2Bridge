@@ -178,6 +178,7 @@ stages:
   displayName: Terraform
   dependsOn: []
 
+  jobs:
   - job: Terraform
     steps:
 
