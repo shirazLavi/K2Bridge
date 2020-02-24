@@ -223,7 +223,6 @@ namespace K2Bridge.Tests.End2End
             AssertJsonIdentical(k2.Result, es.Result);
         }
 
-
         private static void AssertJsonIdentical(JToken k2, JToken es)
         {
             k2.Should().BeEquivalentTo(es);
