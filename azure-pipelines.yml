@@ -174,8 +174,11 @@ stages:
           helm package --version "$SEMANTIC_VERSION" charts/k2bridge -d $empty_dir
           az acr helm push --force "$(ls $empty_dir/*)"
 
+- stage: terraform
+  displayName: Terraform
+  dependsOn: []
+  jobs:
   - job: Terraform
-    displayName: Terraform
     steps:
 
     - bash: |
@@ -205,6 +208,9 @@ stages:
 
 - stage: integration_tests
   displayName: Integration Tests
+  dependsOn:
+  - build
+  - terraform
   jobs:
   - job: Test
     strategy:
@@ -302,12 +308,14 @@ stages:
           set -eux  # fail on error
           az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB_NAME)"
 
-    - bash: |
-        set -eux  # fail on error
-        kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
-        kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
-        kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
-      displayName: Await deployment
+    - bash: kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
+      displayName: Await K2 deployment
+
+    - bash: kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
+      displayName: Await K2 internal Elasticsearch deployment
+
+    - bash: kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
+      displayName: Await Test Elasticsearch deployment
 
     - bash: |
         set -eux  # fail on error
@@ -353,7 +361,8 @@ stages:
         failTaskOnFailedTests: true
         testRunTitle: 'E2E Tests'
 
-- stage: Cleanup
+- stage: cleanup_integration_tests
+  displayName: Cleanup Tests
   dependsOn: integration_tests
   # Do not delete AKS namespace:
   # - if pipeline was canceled or failed before a Kubernetes namespace was generated
@@ -369,7 +378,7 @@ stages:
 
     - task: AzureCLI@1
       displayName: Delete AKS namespace and Kusto database
-      condition: and(variables['KUBERNETES_NAMESPACE'], not(eq(variables['KUBERNETES_NAMESPACE'], 'master')))
+      condition: not(eq(variables['KUBERNETES_NAMESPACE'], 'master'))
       inputs:
         azureSubscription: $(ACR_PULL_SERVICE_CONNECTION)
         scriptLocation: inlineScript
