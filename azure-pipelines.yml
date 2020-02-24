@@ -292,12 +292,14 @@ stages:
           set -eux  # fail on error
           az kusto database create -g "$(RESOURCE_GROUP)" --cluster-name "$(KUSTO_NAME)" -n "$(KUSTO_DB)"
 
-    - bash: |
-        set -eux  # fail on error
-        kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
-        kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
-        kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
-      displayName: Await deployment
+    - bash: kubectl rollout status deployment "$(CHART_NAME)" --timeout 30m
+      displayName: Await K2 deployment
+
+    - bash: kubectl rollout status statefulset "$(CHART_NAME)-es-master" --timeout 30m
+      displayName: Await K2 internal Elasticsearch deployment
+
+    - bash: kubectl rollout status statefulset "$(ES_QA_NAME)-master" --timeout 30m
+      displayName: Await Test Elasticsearch deployment
 
     - bash: |
         set -eux  # fail on error
@@ -343,7 +345,8 @@ stages:
         failTaskOnFailedTests: true
         testRunTitle: 'E2E Tests'
 
-- stage: Cleanup
+- stage: cleanup_integration_tests
+  displayName: Cleanup Tests
   dependsOn: integration_tests
   # Do not delete AKS namespace:
   # - if pipeline was canceled or failed before a Kubernetes namespace was generated
