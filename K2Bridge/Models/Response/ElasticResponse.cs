@@ -10,7 +10,7 @@ namespace K2Bridge.Models.Response
 
     public class ElasticResponse
     {
-        private readonly List<ResponseElement> responses = new List<ResponseElement> { new ResponseElement() };
+        private readonly List<ResponseElement> responses = new List<ResponseElement> { new ResponseElement(), new ResponseElement() };
 
         [JsonProperty("responses")]
         public IEnumerable<ResponseElement> Responses => responses;
