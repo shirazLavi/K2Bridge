@@ -7,6 +7,7 @@ namespace K2Bridge.Visitors
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
     using K2Bridge.Models.Request.Queries;
     using K2Bridge.Models.Request.Queries.LuceneNet;
@@ -47,7 +48,15 @@ namespace K2Bridge.Visitors
                     var isNumeric = GetIsFieldNumeric(queryStringClause.ParsedFieldName).Result;
                     if (isNumeric)
                     {
-                        queryStringClause.KustoQL = $"{queryStringClause.ParsedFieldName} {KustoQLOperators.Equal} {queryStringClause.Phrase}";
+                        // Check to see whether this Phrase contains just a numeric or >=, <=, > or > examples
+                        if (decimal.TryParse(queryStringClause.Phrase, out decimal _))
+                        {
+                            queryStringClause.KustoQL = $"{queryStringClause.ParsedFieldName} {KustoQLOperators.Equal} {queryStringClause.Phrase}";
+                        }
+                        else
+                        {
+                            queryStringClause.KustoQL = $"{queryStringClause.ParsedFieldName} {queryStringClause.Phrase}";
+                        }
                     }
                     else
                     {
@@ -66,8 +75,8 @@ namespace K2Bridge.Visitors
                     // to be consistent with the way ES works
                     // for example consider the following queries:
                     // TelA* => TelA[.\S]*
-                    var phrase = SingleCharPattern.Replace(queryStringClause.Phrase, @"[.\\S]");
-                    phrase = MultiCharPattern.Replace(phrase, @"[.\\S]*");
+                    var phrase = SingleCharPattern.Replace(queryStringClause.Phrase, @"(.)");
+                    phrase = MultiCharPattern.Replace(phrase, @"(.)*");
 
                     queryStringClause.KustoQL = $"{queryStringClause.ParsedFieldName} {KustoQLOperators.MatchRegex} \"{phrase}\"";
                     break;
@@ -82,30 +91,9 @@ namespace K2Bridge.Visitors
 
         private async Task<bool> GetIsFieldNumeric(string fieldName)
         {
-            // for tests
-            if (schemaRetriever == null)
-            {
-                return false;
-            }
-
-            var dic = await schemaRetriever.RetrieveTableSchema();
-
-            // if we failed to get this field type, treat as non numeric (string)
-            if (dic.Contains(fieldName) == false)
-            {
-                return false;
-            }
-
-            var fieldType = dic[fieldName];
-
-            return fieldType switch
-            {
-                "integer" => true,
-                "long" => true,
-                "float" => true,
-                "double" => true,
-                _ => false,
-            };
+            Ensure.IsNotNullOrEmpty(fieldName, nameof(fieldName));
+            var fieldType = await ClauseFieldTypeProcessor.GetType(schemaRetriever, fieldName);
+            return fieldType == ClauseFieldType.Numeric;
         }
 
         /// <summary>

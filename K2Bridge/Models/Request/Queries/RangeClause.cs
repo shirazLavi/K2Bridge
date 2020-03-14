@@ -9,20 +9,41 @@ namespace K2Bridge.Models.Request.Queries
     using K2Bridge.Visitors;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Find documents by field and a range.
+    /// </summary>
     [JsonConverter(typeof(RangeClauseConverter))]
     internal class RangeClause : KustoQLBase, ILeafClause, IVisitable
     {
+        /// <summary>
+        /// Gets or sets the field name to query.
+        /// </summary>
         public string FieldName { get; set; }
 
-        public decimal? GTEValue { get; set; }
+        /// <summary>
+        /// Gets or sets GTE (greater than or equal to or equal) value.
+        /// </summary>
+        public string GTEValue { get; set; }
 
-        // isn't created by kibana but kept here for completeness
-        public decimal? GTValue { get; set; }
+        /// <summary>
+        /// Gets or sets GT (greater than) value.
+        /// isn't created by kibana but kept here for completeness.
+        /// </summary
+        public string GTValue { get; set; }
 
-        public decimal? LTEValue { get; set; }
+        /// <summary>
+        /// Gets or sets LTE (less than or equal) value.
+        /// </summary>
+        public string LTEValue { get; set; }
 
-        public decimal? LTValue { get; set; }
+        /// <summary>
+        /// Gets or sets LT (less than) value.
+        /// </summary>
+        public string LTValue { get; set; }
 
+        /// <summary>
+        /// Gets or sets Date format used to convert date values in the query.
+        /// </summary>
         public string Format { get; set; }
 
         /// <inheritdoc/>

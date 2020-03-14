@@ -4,46 +4,31 @@
 
 namespace K2Bridge.Models.Response
 {
-    using System;
-    using System.Data;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Date histogram bucket response.
+    /// </summary>
     public class DateHistogramBucket : IBucket
     {
-        private enum ColumnNames
-        {
-            Timestamp = 0,
-            Count = 1,
-        }
-
+        /// <summary>
+        /// Gets or sets document count.
+        /// </summary>
         [JsonProperty("doc_count")]
         public int DocCount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the timestamp bucket key.
+        /// This key is a 64 bit number representing a timestamp in milliseconds-since-the-epoch .
+        /// </summary>
         [JsonProperty("key")]
         public long Key { get; set; }
 
+        /// <summary>
+        /// Gets or sets the timestamp bucket key.
+        /// The key here is represented as a date string.
+        /// </summary>
         [JsonProperty("key_as_string")]
         public string KeyAsString { get; set; }
-
-        /// <summary>
-        /// Create a new <see cref="DateHistogramBucket" from a given <see cref="DataRow"/>/>.
-        /// </summary>
-        /// <param name="row">The row to be transformed to bucket.</param>
-        /// <returns>A new DateHistogramBucket.</returns>
-        public static DateHistogramBucket Create(DataRow row)
-        {
-            Ensure.IsNotNull(row, nameof(row));
-
-            var timestamp = row[(int)ColumnNames.Timestamp];
-            var count = row[(int)ColumnNames.Count];
-            var dateBucket = (DateTime)timestamp;
-
-            return new DateHistogramBucket
-            {
-                DocCount = Convert.ToInt32(count),
-                Key = TimeUtils.ToEpochMilliseconds(dateBucket),
-                KeyAsString = dateBucket.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
-            };
-        }
     }
 }

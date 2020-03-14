@@ -4,32 +4,23 @@
 
 namespace K2Bridge.Models.Response
 {
-    using System;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Dynamically built bucket based on a unique value of the searched term.
+    /// </summary>
     public class TermBucket : IBucket
     {
-        private enum DataReaderMapping
-        {
-            Key = 0,
-        }
-
+        /// <summary>
+        /// Gets or sets document count.
+        /// </summary>
         [JsonProperty("doc_count")]
         public int DocCount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the unique key.
+        /// </summary>
         [JsonProperty("key")]
         public string Key { get; set; }
-
-        public static TermBucket Create(System.Data.IDataRecord record)
-        {
-            Ensure.IsNotNull(record, nameof(record));
-
-            var key = record[(int)DataReaderMapping.Key];
-
-            return new TermBucket
-            {
-                Key = Convert.ToString(key),
-            };
-        }
     }
 }

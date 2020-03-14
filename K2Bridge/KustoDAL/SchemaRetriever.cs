@@ -8,7 +8,7 @@ namespace K2Bridge.KustoDAL
     using System.Collections;
     using System.Linq;
     using System.Threading.Tasks;
-    using K2Bridge.Models;
+    using K2Bridge.Utils;
     using Microsoft.Extensions.Logging;
 
     /// <inheritdoc/>
@@ -31,10 +31,12 @@ namespace K2Bridge.KustoDAL
             schema = new Lazy<Task<IDictionary>>(async () => { return await MakeDictionary(); });
         }
 
+        /// <inheritdoc/>
         public string IndexName { get; private set; }
 
         private ILogger Logger { get; set; }
 
+        /// <inheritdoc/>
         public async Task<IDictionary> RetrieveTableSchema()
         {
             return await schema.Value;

@@ -14,12 +14,23 @@ namespace K2Bridge.Models
     {
         private const string CorrelationIdHeader = "x-correlation-id";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RequestContext"/> class.
+        /// </summary>
+        /// <param name="httpContextAccessor">Context value.</param>
         public RequestContext(IHttpContextAccessor httpContextAccessor)
         {
             Ensure.IsNotNull(httpContextAccessor, nameof(httpContextAccessor));
 
             // Header is added in CorrelationIdMiddleware
             CorrelationId = Guid.Parse(httpContextAccessor.HttpContext.Request.Headers[CorrelationIdHeader]);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RequestContext"/> class.
+        /// </summary>
+        public RequestContext()
+        {
         }
 
         /// <summary>
