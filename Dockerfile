@@ -15,7 +15,7 @@ RUN dotnet restore
 
 # Copy everything else and build
 COPY . ./
-RUN dotnet publish K2Bridge -c Release -o out /p:VersionPrefix=${VersionPrefix}
+RUN dotnet publish K2Bridge -c Release -o out
 
 # Test for lint issues, UnitTests project causes the main to build too
 RUN dotnet build K2Bridge.Tests.UnitTests -p:TreatWarningsAsErrors=true -warnaserror
