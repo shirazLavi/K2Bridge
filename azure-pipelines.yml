@@ -50,16 +50,14 @@ stages:
         echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
         echo "  User git"  >> ~/.ssh/config
         chmod 400 ~/.ssh/id_rsa_github
-        git remote add upstream git@github.com:shirazLavi/K2Bridge.git
         git config --global --add url."git@github.com:".insteadOf "https://github.com/"
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
         git status
         git add .version/version.txt 
         git commit -m "commit from yml ***NO_CI***"
-        git checkout upstream/master
         git status
-        git push --no-verify
+        git push
       env:
         MY_MAPPED_TOKEN: $(PATGIT)
         GIT_SSH: $(GIT_SSH)
