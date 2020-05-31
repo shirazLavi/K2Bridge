@@ -46,22 +46,22 @@ stages:
     - bash: |
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
-        mkdir ~/.ssh
+        #mkdir ~/.ssh
         #key_content=$(echo "$GIT_SSH_PRIVATE_KEY"| sed 's/\-\-\-\-\-BEGIN\ OPENSSH\ PRIVATE\ KEY\-\-\-\-\-\ //g'|sed 's/\ \-\-\-\-\-END\ OPENSSH\ PRIVATE\ KEY\-\-\-\-\-//g'| sed 's/\ /\n/g')
         #echo -e "key content:\n $key_content"
         #echo "-----BEGIN OPENSSH PRIVATE KEY----- " >> ~/.ssh/id_rsa_github
         #echo "$key_content" >> ~/.ssh/id_rsa_github
         #echo -e "-----END OPENSSH PRIVATE KEY-----\n" >> ~/.ssh/id_rsa_github
-        echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_github
-        touch ~/.ssh/config
-        echo "host github.com" >> ~/.ssh/config
-        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-        echo "  HostName github.com" >> ~/.ssh/config
-        echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
-        echo "  User git"  >> ~/.ssh/config
-        chmod 400 ~/.ssh/config
-        chmod 400 ~/.ssh/id_rsa_github
-        ssh -vT git@github.com
+        #echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_github
+        #touch ~/.ssh/config
+        #echo "host github.com" >> ~/.ssh/config
+        #echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        #echo "  HostName github.com" >> ~/.ssh/config
+        #echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
+        #echo "  User git"  >> ~/.ssh/config
+        #chmod 400 ~/.ssh/config
+        #chmod 400 ~/.ssh/id_rsa_github
+        ssh -T git@github.com
         git config --global --add url."git@github.com:".insteadOf "https://github.com/"
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
