@@ -38,7 +38,6 @@ stages:
         
 
     - bash: |
-        base64AuthInfo=$(echo $MY_MAPPED_TOKEN| base64)
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
         mkdir ~/.ssh
@@ -53,7 +52,6 @@ stages:
         git status
         git push
       env:
-        MY_MAPPED_TOKEN: $(PATGIT)
         GIT_SSH_PRIVATE_KEY: $(GIT_SSH)
 
 
