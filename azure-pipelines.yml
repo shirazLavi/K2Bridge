@@ -48,9 +48,8 @@ stages:
         echo "  HostName github.com" >> ~/.ssh/config
         echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
         echo "  User git"  >> ~/.ssh/config
-        chmod 400 ~/.ssh/id_rsa
-        ssh-agent -s
-        ssh-add ~/.ssh/id_rsa
+        chmod 400 ~/.ssh/config
+        chmod 400 ~/.ssh/id_rsa_github
         git config --global --add url."git@github.com:".insteadOf "https://github.com/"
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
