@@ -42,7 +42,7 @@ stages:
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
         mkdir ~/.ssh
-        echo "$MY_MAPPED_TOKEN" > ~/.ssh/id_rsa_github
+        echo "$GIT_SSH" > ~/.ssh/id_rsa_github
         touch ~/.ssh/config
         echo "host github.com" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
@@ -57,7 +57,7 @@ stages:
         git add .version/version.txt 
         git commit -m "commit from yml ***NO_CI***"
         git status
-        git push upstream master --no-verify
+        git push origin master --no-verify
       env:
         MY_MAPPED_TOKEN: $(PATGIT)
 
