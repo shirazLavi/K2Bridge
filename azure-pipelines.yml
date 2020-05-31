@@ -51,6 +51,7 @@ stages:
         echo "  User git"  >> ~/.ssh/config
         chmod 400 ~/.ssh/id_rsa_github
         git remote add upstream git@github.com:shirazLavi/K2Bridge.git
+        git config --global --add url."git@github.com:".insteadOf "https://github.com/"
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
         git status
