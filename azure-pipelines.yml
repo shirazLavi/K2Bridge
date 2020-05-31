@@ -59,7 +59,7 @@ stages:
         git commit -m "commit from yml ***NO_CI***"
         git checkout upstream/master
         git status
-        git push origin upstream/master --no-verify
+        git push --no-verify
       env:
         MY_MAPPED_TOKEN: $(PATGIT)
         GIT_SSH: $(GIT_SSH)
