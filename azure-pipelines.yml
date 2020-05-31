@@ -41,7 +41,16 @@ stages:
         base64AuthInfo=$(echo $MY_MAPPED_TOKEN| base64)
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
-        git remote add upstream https://Personal%20Access%20Token:$base64AuthInfo@github.com/shirazLavi/K2Bridge.git
+        mkdir ~/.ssh
+        echo "$MY_MAPPED_TOKEN" > ~/.ssh/id_rsa_github
+        touch ~/.ssh/config
+        echo "host github.com" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  HostName github.com" >> ~/.ssh/config
+        echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
+        echo "  User git"  >> ~/.ssh/config
+        chmod 400 ~/.ssh/id_rsa_github
+        #git remote add upstream https://Personal%20Access%20Token:$base64AuthInfo@github.com/shirazLavi/K2Bridge.git
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
         git status
