@@ -53,10 +53,10 @@ stages:
         git remote add upstream git@github.com:shirazLavi/K2Bridge.git
         git config user.email "shlavi@microsoft.com" 
         git config user.name "Shiraz Lavi"
-        git checkout upstream/master
         git status
         git add .version/version.txt 
         git commit -m "commit from yml ***NO_CI***"
+        git checkout upstream/master
         git status
         git push upstream master --no-verify
       env:
