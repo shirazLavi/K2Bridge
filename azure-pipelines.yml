@@ -42,7 +42,7 @@ stages:
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
         mkdir ~/.ssh
-        echo "$GIT_SSH" > ~/.ssh/id_rsa_github
+        echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_github
         touch ~/.ssh/config
         echo "host github.com" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
@@ -60,7 +60,7 @@ stages:
         git push
       env:
         MY_MAPPED_TOKEN: $(PATGIT)
-        GIT_SSH: $(GIT_SSH)
+        GIT_SSH_PRIVATE_KEY: $(GIT_SSH)
 
 
     - bash: |   
