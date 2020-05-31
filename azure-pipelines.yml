@@ -60,6 +60,7 @@ stages:
         git push upstream master --no-verify
       env:
         MY_MAPPED_TOKEN: $(PATGIT)
+        GIT_SSH: $(GIT_SSH)
 
 
     - bash: |   
