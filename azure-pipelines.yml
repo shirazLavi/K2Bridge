@@ -36,6 +36,12 @@ stages:
         echo "$new_version" > .version/version.txt
         echo $(semanticversion)
         
+    - task: InstallSSHKey@0
+      inputs:
+        knownHostsEntry: github.com
+        #sshPublicKey: 
+        #sshPassphrase: # Optional
+        sshKeySecureFile: $(id_rsa_github2)
 
     - bash: |
         cd $(Build.SourcesDirectory)
