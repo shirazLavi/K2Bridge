@@ -42,14 +42,7 @@ stages:
         cd $(Build.SourcesDirectory)
         git checkout $(Build.SourceBranchName)
         mkdir ~/.ssh
-        echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_github
-        echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        #touch ~/.ssh/config
-        #echo "host github.com" >> ~/.ssh/config
-        #echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-        #echo "  HostName github.com" >> ~/.ssh/config
-        #echo "  IdentityFile ~/.ssh/id_rsa_github" >> ~/.ssh/config
-        #echo "  User git"  >> ~/.ssh/config
+        echo "$GIT_SSH_PRIVATE_KEY"| base64 --decode > ~/.ssh/id_rsa
         chmod 400 ~/.ssh/id_rsa
         git config --global --add url."git@github.com:".insteadOf "https://github.com/"
         git config user.email "shlavi@microsoft.com" 
