@@ -41,7 +41,7 @@ stages:
         knownHostsEntry: github.com
         #sshPublicKey: 
         #sshPassphrase: # Optional
-        sshKeySecureFile: $(id_rsa_github2)
+        sshKeySecureFile: id_rsa_github2
 
     - bash: |
         cd $(Build.SourcesDirectory)
