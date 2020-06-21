@@ -63,7 +63,8 @@ stages:
     - bash: |
         set -eux 
         # echo -e docker build --target build --build-arg VersionPrefix='$(semanticversion)' -t k2bridge-build .
-        docker build --target build --build-arg VersionPrefix="$SEMANTICVERSION" -t k2bridge-build .
+        export VersionPrefix=$SEMANTICVERSION
+        docker build --target build --build-arg VersionPrefix -t k2bridge-build .
         # Temporarily create container in order to extract test results file
         id=$(docker create k2bridge-build)
         docker cp "$id:/app/TestResult.xml" .
