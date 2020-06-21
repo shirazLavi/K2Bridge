@@ -174,7 +174,6 @@ stages:
   - job: Deploy_K2Bridge
     displayName: Deploy K2Bridge
     variables:
-      semanticversion: $[ dependencies.build.build_and_unittest.outputs['echo_semanticversion.semanticversion'] ]
       ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
         NOT_MASTER_ES_CONFIG: "--set elasticsearch.replicas=2 --set elasticsearch.minimumMasterNodes=2"
     steps:
@@ -194,8 +193,15 @@ stages:
 
     - bash: |
         set -eux  # fail on error
-        echo "$SEMANTICVERSION"
-        "echo $(semanticversion)"
+                set -eux  # fail on error
+        # Only build first stage of Dockerfile (build and unit test)
+        echo $BUILD_SOURCESDIRECTORY\.version\version.txt
+        file="$BUILD_SOURCESDIRECTORY/.version/version.txt" #the file where you keep your string name
+        name=$(cat "$file")        #the output of 'cat $file' is assigned to the $name variable
+        echo $name
+        echo "##vso[task.setvariable variable=semanticversion]$name"
+        new_version=$(cat .version/version.txt|awk -F "." '{print $1"."$2"."$3+1}')
+        SEMANTICVERSION = $new_version
         helm show chart $(ACR_NAME)/k2bridge
         # List charts before deploying (for job log, useful if rerunning job)
         helm list
