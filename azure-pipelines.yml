@@ -33,11 +33,10 @@ stages:
         file="$BUILD_SOURCESDIRECTORY/.version/version.txt" #the file where you keep your string name
         name=$(cat "$file")        #the output of 'cat $file' is assigned to the $name variable
         echo $name
-        echo "##vso[task.setvariable variable=semanticversion;isOutput=true]$name"
+        echo "##vso[task.setvariable variable=semanticversion]$name"
         new_version=$(cat .version/version.txt|awk -F "." '{print $1"."$2"."$3+1}')
         echo "$new_version" > .version/version.txt
-        echo $(semanticversion)
-      name: echo_semanticversion  
+        echo $(semanticversion)  
         
     - task: InstallSSHKey@0
       inputs:
