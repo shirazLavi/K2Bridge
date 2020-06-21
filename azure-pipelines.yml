@@ -194,6 +194,8 @@ stages:
 
     - bash: |
         set -eux  # fail on error
+        echo "$SEMANTICVERSION"
+        "echo $(semanticversion)"
         helm show chart $(ACR_NAME)/k2bridge
         # List charts before deploying (for job log, useful if rerunning job)
         helm list
