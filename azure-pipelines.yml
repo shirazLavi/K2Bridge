@@ -203,7 +203,7 @@ stages:
           --version "$SEMANTICVERSION" \
           --wait --timeout 30m \
           --set image.repository=$(ACR_NAME).azurecr.io/k2bridge \
-          --set image.tag="$SEMANTICVERSION" \
+          --set image.tag=$SEMANTICVERSION \
           --set replicaCount=2 \
           --set settings.adxClusterUrl="$KUSTO_URI" \
           --set settings.adxDefaultDatabaseName="$(KUSTO_DB)" \
