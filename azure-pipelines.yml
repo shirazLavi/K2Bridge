@@ -18,6 +18,11 @@ stages:
   pool:
       # CredScan only runs on Windows
       vmImage: 'ubuntu-16.04'
+
+  variables:
+   semanticversion: "default"
+
+
   jobs:
  
   - job: build_and_unittest
