@@ -37,6 +37,7 @@ stages:
         new_version=$(cat .version/version.txt|awk -F "." '{print $1"."$2"."$3+1}')
         echo "$new_version" > .version/version.txt
         echo $(semanticversion)
+      name: echo_semanticversion  
         
     - task: InstallSSHKey@0
       inputs:
@@ -173,7 +174,9 @@ stages:
 
   - job: Deploy_K2Bridge
     displayName: Deploy K2Bridge
+    dependsOn: build_and_unittest
     variables:
+      semanticversion: $[ dependencies.build_and_unittest.outputs['echo_semanticversion.semanticversion'] ]
       ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
         NOT_MASTER_ES_CONFIG: "--set elasticsearch.replicas=2 --set elasticsearch.minimumMasterNodes=2"
     steps:
