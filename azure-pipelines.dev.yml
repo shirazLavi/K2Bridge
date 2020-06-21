@@ -19,7 +19,7 @@ pr:
     - '*.png'
     - 'README.md'
 
-name: $(DayOfYear)$(Rev:.r)
+name: $(Build.BuildId)
             
  
 variables:
