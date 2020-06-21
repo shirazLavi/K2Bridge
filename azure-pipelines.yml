@@ -106,7 +106,8 @@ stages:
         set -eux  # fail on error
         # Build runtime Docker image
         # Reuses the cached build stage from the previous docker build task
-        docker build --build-arg VersionPrefix="$SEMANTICVERSION" \
+        export VersionPrefix=$SEMANTICVERSION
+        docker build --build-arg VersionPrefix \
             -t "$ACR_NAME.azurecr.io/k2bridge:$SEMANTICVERSION" \
             .
       displayName: Build Runtime Image
@@ -114,8 +115,9 @@ stages:
     - bash: |
         set -eux  # fail on error
         # Build e2e-test Docker image
+        export VersionPrefix=$SEMANTICVERSION
         docker build --target end2endtest \
-            --build-arg VersionPrefix="$SEMANTICVERSION" \
+            --build-arg VersionPrefix \
             -t "$ACR_NAME.azurecr.io/k2bridge-test:$SEMANTICVERSION" \
             .
       displayName: Build E2E-Test Image
