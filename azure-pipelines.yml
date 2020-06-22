@@ -29,13 +29,13 @@ stages:
     - bash: |   
         set -eux  # fail on error
         # Only build first stage of Dockerfile (build and unit test)
+        new_version=$(cat .version/version.txt|awk -F '.' '{print $1"."$2"."$3+1}'|grep -m1 "")
+        echo "$new_version" | sed s/\'//g > .version/version.txt
         echo $BUILD_SOURCESDIRECTORY\.version\version.txt
         file="$BUILD_SOURCESDIRECTORY/.version/version.txt" #the file where you keep your string name
         name=$(cat "$file")        #the output of 'cat $file' is assigned to the $name variable
         echo $name
         echo "##vso[task.setvariable variable=semanticversion]$name"
-        new_version=$(cat .version/version.txt|awk -F '.' '{print $1"."$2"."$3+1}'|grep -m1 "")
-        echo "$new_version" | sed s/\'//g > .version/version.txt
         echo $(semanticversion)  
         
     - task: InstallSSHKey@0
