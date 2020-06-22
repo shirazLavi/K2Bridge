@@ -34,7 +34,7 @@ stages:
         name=$(cat "$file")        #the output of 'cat $file' is assigned to the $name variable
         echo $name
         echo "##vso[task.setvariable variable=semanticversion]$name"
-        new_version=$(cat .version/version.txt|awk -F "." '{print $1"."$2"."$3+1}'| awk '{ printf "%s\\n\n",$1 }')
+        new_version=$(cat .version/version.txt|awk -F '.' '{print $1"."$2"."$3+1}'|grep -m1 "")
         echo -e "$new_version\n" > .version/version.txt
         echo $(semanticversion)  
         
